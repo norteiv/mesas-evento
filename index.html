@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<!-- saved from url=(0050)file:///C:/Users/Usu%C3%A1rio/Downloads/index.html -->
+<html lang="pt-BR"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reserva de Mesas</title>
+<link href="./index_files/css2" rel="stylesheet">
+<style>
+:root {
+  --verde: #22c55e;
+  --verde-light: #dcfce7;
+  --verde-dark: #15803d;
+  --amarelo: #f59e0b;
+  --amarelo-light: #fef3c7;
+  --amarelo-dark: #92400e;
+  --vermelho: #ef4444;
+  --vermelho-light: #fee2e2;
+  --vermelho-dark: #991b1b;
+  --azul: #3b82f6;
+  --azul-light: #eff6ff;
+  --bg: #0f0f13;
+  --bg2: #18181f;
+  --bg3: #22222c;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #f1f0f5;
+  --text2: #9898b0;
+  --text3: #5a5a72;
+  --accent: #a78bfa;
+  --accent-light: rgba(167,139,250,0.15);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 18px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Sora', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── UTILITIES ── */
+.hidden { display: none !important; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* ── NOISE TEXTURE ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* ── HEADER ── */
+#app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(15,15,19,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.8); }
+}
+
+.brand-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.brand-event {
+  font-size: 12px;
+  color: var(--text2);
+  font-weight: 400;
+}
+
+#btn-admin-toggle {
+  font-size: 12px;
+  color: var(--text3);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+  transition: all 0.2s;
+}
+#btn-admin-toggle:hover { color: var(--text2); border-color: var(--border2); }
+
+/* ── VIEWS ── */
+#view-buyer, #view-admin, #view-login { position: relative; z-index: 1; }
+
+/* ── BUYER VIEW ── */
+#view-buyer { padding: 24px 20px 40px; max-width: 900px; margin: 0 auto; }
+
+.event-hero {
+  text-align: center;
+  padding: 32px 0 28px;
+}
+.event-hero h1 {
+  font-size: clamp(22px, 5vw, 36px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.event-hero p {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.6;
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text2);
+}
+.legend-dot {
+  width: 11px; height: 11px;
+  border-radius: 3px;
+}
+
+/* ── MAP CANVAS ── */
+#map-container {
+  position: relative;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  min-height: 360px;
+  margin-bottom: 24px;
+}
+
+#map-bg-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  opacity: 0.35;
+}
+
+#map-bg-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 360px;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.map-placeholder-icon {
+  font-size: 48px;
+  opacity: 0.15;
+}
+
+#mesas-layer {
+  position: absolute;
+  inset: 0;
+}
+
+/* ── MESA BUTTON ── */
+.mesa-btn {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  user-select: none;
+}
+
+.mesa-btn:active { transform: translate(-50%, -50%) scale(0.92); }
+
+.mesa-btn.disponivel {
+  background: var(--verde-light);
+  color: var(--verde-dark);
+  border-color: var(--verde);
+  box-shadow: 0 0 0 0 rgba(34,197,94,0);
+}
+.mesa-btn.disponivel:hover {
+  background: var(--verde);
+  color: white;
+  box-shadow: 0 0 16px rgba(34,197,94,0.4);
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.mesa-btn.negociacao {
+  background: var(--amarelo-light);
+  color: var(--amarelo-dark);
+  border-color: var(--amarelo);
+  cursor: not-allowed;
+  animation: pulse-yellow 2s ease-in-out infinite;
+}
+@keyframes pulse-yellow {
+  0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.3); }
+  50% { box-shadow: 0 0 12px 4px rgba(245,158,11,0.2); }
+}
+
+.mesa-btn.vendida {
+  background: var(--vermelho-light);
+  color: var(--vermelho-dark);
+  border-color: var(--vermelho);
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+@media (min-width: 600px) {
+  .modal-overlay { align-items: center; }
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  width: 100%;
+  max-width: 440px;
+  animation: slideUp 0.28s cubic-bezier(0.34, 1.2, 0.64, 1);
+  position: relative;
+}
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--text2);
+  transition: all 0.15s;
+}
+.modal-close:hover { color: var(--text); background: var(--border); }
+
+.modal-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-bottom: 14px;
+  letter-spacing: 0.04em;
+}
+
+.modal h2 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+.modal-subtitle {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+.form-group input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: 'Sora', sans-serif;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.form-group input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(167,139,250,0.12);
+}
+.form-group input::placeholder { color: var(--text3); }
+
+.btn-primary {
+  width: 100%;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 13px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+  transition: all 0.18s;
+  letter-spacing: -0.01em;
+  margin-top: 4px;
+}
+.btn-primary:hover { background: #8b5cf6; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(139,92,246,0.35); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ── PIX SCREEN ── */
+.pix-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  margin: 16px 0;
+}
+.pix-amount {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.03em;
+  margin-bottom: 4px;
+}
+.pix-label { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+
+.pix-key-box {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.pix-key-label { font-size: 11px; color: var(--text3); }
+.pix-key-val { font-size: 13px; font-weight: 500; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+.btn-copy {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11px;
+  color: var(--text2);
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn-copy:hover { color: var(--accent); border-color: var(--accent); }
+
+.timer-bar-wrap {
+  background: var(--bg2);
+  border-radius: 99px;
+  height: 4px;
+  overflow: hidden;
+  margin: 12px 0 6px;
+}
+.timer-bar {
+  height: 100%;
+  background: var(--amarelo);
+  border-radius: 99px;
+  transition: width 1s linear;
+}
+.timer-text {
+  font-size: 11px;
+  color: var(--text3);
+  text-align: center;
+}
+
+.waiting-msg {
+  background: var(--amarelo-light);
+  color: var(--amarelo-dark);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 12px;
+  font-weight: 500;
+}
+
+/* ── RECIBO ── */
+.recibo-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.recibo-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--verde), var(--accent));
+}
+.recibo-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.recibo-row:last-of-type { border-bottom: none; }
+.recibo-key { color: var(--text2); }
+.recibo-val { font-weight: 500; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+.recibo-badge {
+  background: var(--verde-light);
+  color: var(--verde-dark);
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.btn-secondary {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+  transition: all 0.15s;
+  width: 100%;
+  margin-top: 14px;
+}
+.btn-secondary:hover { color: var(--text); border-color: var(--border2); background: var(--bg3); }
+
+/* ── STATUS TOAST ── */
+#toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  z-index: 999;
+  transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+#toast.error { border-color: var(--vermelho); color: var(--vermelho); }
+#toast.success { border-color: var(--verde); color: var(--verde); }
+
+/* ── LOGIN ── */
+#view-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.login-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+}
+.login-card h2 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+.login-card p { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+#login-error { color: var(--vermelho); font-size: 12px; margin-top: 8px; min-height: 16px; }
+
+/* ── ADMIN VIEW ── */
+#view-admin {
+  padding: 24px 20px 60px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.admin-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+.btn-danger-sm {
+  background: none;
+  border: 1px solid rgba(239,68,68,0.4);
+  color: var(--vermelho);
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  font-size: 12px;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-danger-sm:hover { background: rgba(239,68,68,0.1); }
+
+.admin-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px;
+  margin-bottom: 24px;
+  width: fit-content;
+}
+.admin-tab {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--text2);
+  font-family: 'Sora', sans-serif;
+  transition: all 0.15s;
+}
+.admin-tab.active { background: var(--bg3); color: var(--text); }
+.admin-tab:hover:not(.active) { color: var(--text); }
+
+.admin-panel { display: none; }
+.admin-panel.active { display: block; }
+
+/* ── CONFIG ── */
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.config-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.config-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 11px;
+}
+.config-field { margin-bottom: 12px; }
+.config-field label {
+  display: block;
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 5px;
+}
+.config-field input, .config-field select, .config-field textarea {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: 'Sora', sans-serif;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.config-field input:focus, .config-field select:focus, .config-field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(167,139,250,0.1);
+}
+.config-field select option { background: var(--bg3); }
+.config-field textarea { resize: vertical; min-height: 70px; }
+
+.btn-save {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 8px;
+}
+.btn-save:hover { background: #8b5cf6; }
+
+/* ── LAYOUT EDITOR ── */
+.layout-editor-wrap {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+.layout-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.layout-toolbar label {
+  font-size: 12px;
+  color: var(--text2);
+}
+.btn-outline {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  font-size: 12px;
+  color: var(--text2);
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+  transition: all 0.15s;
+}
+.btn-outline:hover { color: var(--text); border-color: var(--accent); }
+.btn-outline.active { color: var(--accent); border-color: var(--accent); background: var(--accent-light); }
+
+#layout-canvas-wrap {
+  position: relative;
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  min-height: 400px;
+  overflow: hidden;
+  cursor: crosshair;
+  background: var(--bg3);
+}
+#layout-canvas-wrap.viewing { cursor: default; }
+
+#layout-bg {
+  display: block;
+  width: 100%;
+  height: auto;
+  opacity: 0.4;
+  pointer-events: none;
+  user-select: none;
+}
+
+.admin-mesa {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 42px;
+  height: 42px;
+  border-radius: 9px;
+  border: 2px solid;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+  transition: box-shadow 0.15s;
+}
+.admin-mesa.disponivel { background: var(--verde-light); color: var(--verde-dark); border-color: var(--verde); }
+.admin-mesa.negociacao { background: var(--amarelo-light); color: var(--amarelo-dark); border-color: var(--amarelo); }
+.admin-mesa.vendida { background: var(--vermelho-light); color: var(--vermelho-dark); border-color: var(--vermelho); }
+.admin-mesa:hover { box-shadow: 0 0 12px rgba(255,255,255,0.1); }
+.admin-mesa .delete-btn {
+  display: none;
+  position: absolute;
+  top: -8px; right: -8px;
+  width: 16px; height: 16px;
+  background: var(--vermelho);
+  color: white;
+  border-radius: 50%;
+  font-size: 9px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+  line-height: 1;
+  z-index: 20;
+}
+.admin-mesa:hover .delete-btn { display: flex; }
+.admin-mesa.dragging { opacity: 0.7; cursor: grabbing; z-index: 50; }
+
+.layout-hint {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 10px;
+  text-align: center;
+}
+
+/* ── PEDIDOS TABLE ── */
+.pedidos-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+}
+.stat-num {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+.stat-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+.pedidos-table-wrap {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.pedidos-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.pedidos-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text3);
+  background: var(--bg3);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.pedidos-table td {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+.pedidos-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.status-badge.aguardando { background: var(--amarelo-light); color: var(--amarelo-dark); }
+.status-badge.confirmado { background: var(--verde-light); color: var(--verde-dark); }
+.status-badge.expirado { background: rgba(239,68,68,0.15); color: var(--vermelho); }
+
+.btn-confirm {
+  background: var(--verde);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-confirm:hover { background: var(--verde-dark); }
+.btn-expire {
+  background: none;
+  border: 1px solid rgba(239,68,68,0.4);
+  color: var(--vermelho);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-left: 5px;
+}
+.btn-expire:hover { background: rgba(239,68,68,0.1); }
+
+.empty-state {
+  padding: 48px;
+  text-align: center;
+  color: var(--text3);
+  font-size: 14px;
+}
+
+@media print {
+  #app-header, #btn-admin-toggle { display: none !important; }
+  .modal-close, .btn-secondary { display: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- HEADER -->
+<header id="app-header">
+  <div class="header-brand">
+    <div class="brand-dot"></div>
+    <div>
+      <div class="brand-name" id="header-event-name">Evento Comunitário</div>
+      <div class="brand-event" id="header-event-sub"></div>
+    </div>
+  </div>
+  <button id="btn-admin-toggle">Área admin</button>
+</header>
+
+<!-- ══════════════════════════════ BUYER VIEW ══════════════════════════════ -->
+<div id="view-buyer">
+  <div class="event-hero">
+    <h1 id="hero-title">Evento Comunitário</h1>
+    <p id="hero-desc">Selecione sua mesa e realize o pagamento via Pix.</p>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--verde)"></div> Disponível</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--amarelo)"></div> Em negociação</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--vermelho)"></div> Vendida</div>
+  </div>
+
+  <div id="map-container">
+    <img id="map-bg-img" class="hidden" alt="Mapa do evento">
+    <div id="map-bg-placeholder">
+      <div class="map-placeholder-icon">🗺️</div>
+      <div style="font-size:13px;color:var(--text3)">O administrador ainda não configurou o layout.</div>
+    </div>
+    <div id="mesas-layer"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ LOGIN ══════════════════════════════ -->
+<div id="view-login" class="hidden">
+  <div class="login-card">
+    <div style="font-size:32px;margin-bottom:12px">🔐</div>
+    <h2>Admin</h2>
+    <p>Digite a senha para acessar o painel.</p>
+    <div class="form-group">
+      <input type="password" id="login-input" placeholder="Senha" onkeydown="if(event.key===&#39;Enter&#39;)doLogin()">
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Entrar</button>
+    <div id="login-error"></div>
+    <button class="btn-secondary" onclick="showView(&#39;buyer&#39;)" style="margin-top:12px">← Voltar ao site</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ ADMIN VIEW ══════════════════════════════ -->
+<div id="view-admin" class="hidden">
+  <div class="admin-header">
+    <h1>Painel Admin</h1>
+    <button class="btn-danger-sm" onclick="logout()">Sair</button>
+  </div>
+
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="switchTab(&#39;pedidos&#39;)">Pedidos</button>
+    <button class="admin-tab" onclick="switchTab(&#39;layout&#39;)">Layout</button>
+    <button class="admin-tab" onclick="switchTab(&#39;config&#39;)">Configurações</button>
+  </div>
+
+  <!-- PEDIDOS -->
+  <div id="tab-pedidos" class="admin-panel active">
+    <div class="pedidos-stats">
+      <div class="stat-card"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Total de mesas</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-vendidas" style="color:var(--verde)">0</div><div class="stat-label">Confirmadas</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-neg" style="color:var(--amarelo)">0</div><div class="stat-label">Em negociação</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-receita" style="color:var(--accent)">R$ 0</div><div class="stat-label">Receita confirmada</div></div>
+    </div>
+    <div class="pedidos-table-wrap">
+      <table class="pedidos-table">
+        <thead>
+          <tr>
+            <th>Mesa</th>
+            <th>Comprador</th>
+            <th>CPF</th>
+            <th>Valor</th>
+            <th>Reservado às</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="pedidos-tbody">
+          <tr><td colspan="7" class="empty-state">Nenhum pedido ainda.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- LAYOUT -->
+  <div id="tab-layout" class="admin-panel">
+    <div class="layout-editor-wrap">
+      <div class="layout-toolbar">
+        <label>Imagem de fundo:</label>
+        <input type="file" id="bg-upload" accept="image/*" style="display:none" onchange="loadBgImage(event)">
+        <button class="btn-outline" onclick="document.getElementById(&#39;bg-upload&#39;).click()">📁 Carregar imagem</button>
+        <button class="btn-outline active" id="btn-add-mode" onclick="setAddMode(true)">+ Adicionar mesas</button>
+        <button class="btn-outline" id="btn-view-mode" onclick="setAddMode(false)">👁 Visualizar</button>
+        <button class="btn-outline" onclick="clearAllMesas()" style="margin-left:auto;color:var(--vermelho)">🗑 Limpar tudo</button>
+      </div>
+      <div id="layout-canvas-wrap" onclick="canvasClick(event)">
+        <img id="layout-bg" class="hidden" alt="">
+        <div id="admin-mesas-layer"></div>
+      </div>
+      <div class="layout-hint">Clique na imagem para adicionar mesas. Arraste para reposicionar. Passe o mouse para excluir.</div>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div id="tab-config" class="admin-panel">
+    <div class="config-grid">
+      <div class="config-card">
+        <h3>📋 Evento</h3>
+        <div class="config-field"><label>Nome do evento</label><input id="cfg-nome" type="text" placeholder="Ex: Festa Junina 2025"></div>
+        <div class="config-field"><label>Descrição curta</label><textarea id="cfg-desc" placeholder="Ex: Garanta sua mesa para a festa!"></textarea></div>
+        <div class="config-field"><label>Data do evento</label><input id="cfg-data" type="date"></div>
+        <button class="btn-save" onclick="saveConfig()">Salvar evento</button>
+      </div>
+      <div class="config-card">
+        <h3>💳 Pagamento</h3>
+        <div class="config-field"><label>Valor por mesa (R$)</label><input id="cfg-valor" type="number" placeholder="150.00" step="0.01" min="0"></div>
+        <div class="config-field"><label>Tipo de chave Pix</label>
+          <select id="cfg-pix-tipo">
+            <option value="CPF">CPF</option>
+            <option value="CNPJ">CNPJ</option>
+            <option value="E-mail">E-mail</option>
+            <option value="Telefone">Telefone</option>
+            <option value="Chave aleatória">Chave aleatória</option>
+          </select>
+        </div>
+        <div class="config-field"><label>Chave Pix</label><input id="cfg-pix-chave" type="text" placeholder="Ex: evento@email.com"></div>
+        <div class="config-field"><label>Nome do recebedor (para o recibo)</label><input id="cfg-pix-nome" type="text" placeholder="Ex: Associação Comunitária XYZ"></div>
+        <button class="btn-save" onclick="saveConfig()">Salvar pagamento</button>
+      </div>
+      <div class="config-card">
+        <h3>⚙️ Regras</h3>
+        <div class="config-field"><label>Mesas máximas por CPF</label><input id="cfg-max-cpf" type="number" min="1" max="20" placeholder="2"></div>
+        <div class="config-field"><label>Tempo de reserva (minutos)</label><input id="cfg-tempo" type="number" min="5" max="120" placeholder="30"></div>
+        <div class="config-field"><label>Senha do admin</label><input id="cfg-senha" type="password" placeholder="Nova senha (deixe em branco para manter)"></div>
+        <button class="btn-save" onclick="saveConfig()">Salvar regras</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ MODAL ══════════════════════════════ -->
+<div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
+  <div class="modal" id="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════
+const STORAGE_KEY = 'mesas_app_v1';
+
+function defaultState() {
+  return {
+    config: {
+      nomeEvento: 'Evento Comunitário',
+      descEvento: 'Selecione sua mesa e realize o pagamento via Pix.',
+      dataEvento: '',
+      valor: 150,
+      pixTipo: 'E-mail',
+      pixChave: '',
+      pixNome: '',
+      maxPorCpf: 2,
+      tempoReserva: 30,
+      senha: 'admin123'
+    },
+    mesas: [],
+    pedidos: [],
+    bgImage: null
+  };
+}
+
+let state = (() => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return { ...defaultState(), ...parsed };
+    }
+  } catch(e) {}
+  return defaultState();
+})();
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+// ════════════════════════════════════════════
+//  VIEWS
+// ════════════════════════════════════════════
+let currentView = 'buyer';
+let isLoggedIn = false;
+let addMode = true;
+let timerInterval = null;
+
+function showView(v) {
+  document.getElementById('view-buyer').classList.add('hidden');
+  document.getElementById('view-login').classList.add('hidden');
+  document.getElementById('view-admin').classList.add('hidden');
+  document.getElementById('view-' + v).classList.remove('hidden');
+  currentView = v;
+  if (v === 'buyer') renderBuyer();
+  if (v === 'admin') renderAdmin();
+}
+
+document.getElementById('btn-admin-toggle').addEventListener('click', () => {
+  if (isLoggedIn) showView('admin');
+  else showView('login');
+});
+
+function doLogin() {
+  const pw = document.getElementById('login-input').value;
+  if (pw === state.config.senha) {
+    isLoggedIn = true;
+    document.getElementById('login-error').textContent = '';
+    document.getElementById('login-input').value = '';
+    showView('admin');
+  } else {
+    document.getElementById('login-error').textContent = 'Senha incorreta.';
+  }
+}
+
+function logout() {
+  isLoggedIn = false;
+  showView('buyer');
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if (tab === 'layout') renderAdminLayout();
+  if (tab === 'pedidos') renderPedidos();
+  if (tab === 'config') renderConfig();
+}
+
+// ════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════
+let toastTimer;
+function toast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = '', 3000);
+}
+
+// ════════════════════════════════════════════
+//  BUYER RENDER
+// ════════════════════════════════════════════
+function renderBuyer() {
+  checkExpiredReservations();
+
+  const cfg = state.config;
+  document.getElementById('header-event-name').textContent = cfg.nomeEvento;
+  document.getElementById('header-event-sub').textContent = cfg.dataEvento ? formatDate(cfg.dataEvento) : '';
+  document.getElementById('hero-title').textContent = cfg.nomeEvento;
+  document.getElementById('hero-desc').textContent = cfg.descEvento || 'Selecione uma mesa disponível.';
+
+  const bgImg = document.getElementById('map-bg-img');
+  const placeholder = document.getElementById('map-bg-placeholder');
+
+  if (state.bgImage) {
+    bgImg.src = state.bgImage;
+    bgImg.classList.remove('hidden');
+    placeholder.classList.add('hidden');
+  } else {
+    bgImg.classList.add('hidden');
+    placeholder.classList.remove('hidden');
+  }
+
+  const layer = document.getElementById('mesas-layer');
+  layer.innerHTML = '';
+
+  state.mesas.forEach(mesa => {
+    const status = getMesaStatus(mesa.id);
+    const btn = document.createElement('button');
+    btn.className = 'mesa-btn ' + status;
+    btn.style.left = mesa.x + '%';
+    btn.style.top = mesa.y + '%';
+    btn.textContent = mesa.id;
+    btn.title = status === 'disponivel' ? 'Mesa ' + mesa.id + ' — clique para reservar' :
+                status === 'negociacao' ? 'Mesa ' + mesa.id + ' — em negociação' : 'Mesa ' + mesa.id + ' — vendida';
+    if (status === 'disponivel') {
+      btn.addEventListener('click', () => openBuyModal(mesa.id));
+    }
+    layer.appendChild(btn);
+  });
+}
+
+function getMesaStatus(id) {
+  const pedido = state.pedidos.find(p => p.mesaId === id && p.status !== 'expirado');
+  if (!pedido) return 'disponivel';
+  if (pedido.status === 'confirmado') return 'vendida';
+  return 'negociacao';
+}
+
+function checkExpiredReservations() {
+  const agora = Date.now();
+  let changed = false;
+  state.pedidos.forEach(p => {
+    if (p.status === 'aguardando') {
+      const mins = state.config.tempoReserva || 30;
+      if (agora - p.criadoEm > mins * 60 * 1000) {
+        p.status = 'expirado';
+        changed = true;
+      }
+    }
+  });
+  if (changed) save();
+}
+
+// ════════════════════════════════════════════
+//  BUY MODAL
+// ════════════════════════════════════════════
+function openBuyModal(mesaId) {
+  const cfg = state.config;
+
+  // Check CPF limit
+  const alreadyBought = (cpf) => {
+    return state.pedidos.filter(p => p.cpf === cpf && p.status === 'confirmado').length;
+  };
+
+  const html = `
+    <div class="modal-tag">🪑 Mesa ${mesaId}</div>
+    <h2>Reservar mesa ${mesaId}</h2>
+    <p class="modal-subtitle">Preencha seus dados para iniciar a reserva.</p>
+    <div class="form-group">
+      <label>Nome completo</label>
+      <input type="text" id="buy-nome" placeholder="Seu nome completo" oninput="validateBuyForm()">
+    </div>
+    <div class="form-group">
+      <label>CPF</label>
+      <input type="text" id="buy-cpf" placeholder="000.000.000-00" maxlength="14" oninput="maskCPF(this);validateBuyForm()">
+    </div>
+    <div id="cpf-warn" style="font-size:12px;color:var(--vermelho);margin-top:-8px;margin-bottom:8px;display:none"></div>
+    <button class="btn-primary" id="btn-ir-pix" onclick="goToPix(${mesaId})" disabled>
+      Continuar para o Pix →
+    </button>
+  `;
+  showModal(html);
+}
+
+function maskCPF(el) {
+  let v = el.value.replace(/\D/g, '');
+  if (v.length > 11) v = v.slice(0, 11);
+  v = v.replace(/(\d{3})(\d)/, '$1.$2');
+  v = v.replace(/(\d{3})(\d)/, '$1.$2');
+  v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  el.value = v;
+}
+
+function validateBuyForm() {
+  const nome = document.getElementById('buy-nome')?.value.trim();
+  const cpf = document.getElementById('buy-cpf')?.value.replace(/\D/g, '');
+  const btn = document.getElementById('btn-ir-pix');
+  const warn = document.getElementById('cpf-warn');
+  if (!btn) return;
+
+  const bought = state.pedidos.filter(p => p.cpf === cpf && p.status === 'confirmado').length;
+  const max = state.config.maxPorCpf || 2;
+
+  if (cpf.length === 11 && bought >= max) {
+    warn.textContent = `Este CPF já possui ${bought} mesa(s) confirmada(s). Limite: ${max}.`;
+    warn.style.display = 'block';
+    btn.disabled = true;
+  } else {
+    warn.style.display = 'none';
+    btn.disabled = !(nome && nome.length > 2 && cpf.length === 11);
+  }
+}
+
+function goToPix(mesaId) {
+  const nome = document.getElementById('buy-nome').value.trim();
+  const cpf = document.getElementById('buy-cpf').value.trim();
+  const cfg = state.config;
+
+  // Create reservation
+  const pedido = {
+    id: Date.now(),
+    mesaId,
+    nome,
+    cpf,
+    valor: cfg.valor,
+    criadoEm: Date.now(),
+    status: 'aguardando'
+  };
+  state.pedidos.push(pedido);
+  save();
+
+  const mins = cfg.tempoReserva || 30;
+  const endTime = pedido.criadoEm + mins * 60 * 1000;
+
+  const html = `
+    <div class="modal-tag">💳 Pix</div>
+    <h2>Efetue o pagamento</h2>
+    <p class="modal-subtitle">Mesa ${mesaId} reservada por ${mins} minutos. Realize o pagamento e aguarde a confirmação.</p>
+    <div class="pix-card">
+      <div class="pix-amount">R$ ${Number(cfg.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</div>
+      <div class="pix-label">Mesa ${mesaId} • ${nome}</div>
+      ${cfg.pixChave ? `
+        <div class="pix-key-box">
+          <div>
+            <div class="pix-key-label">${cfg.pixTipo}</div>
+            <div class="pix-key-val">${cfg.pixChave}</div>
+          </div>
+          <button class="btn-copy" onclick="copyKey('${cfg.pixChave}')">Copiar</button>
+        </div>
+        ${cfg.pixNome ? `<div style="font-size:11px;color:var(--text3);margin-bottom:10px;">Favorecido: ${cfg.pixNome}</div>` : ''}
+      ` : '<div style="font-size:13px;color:var(--text3);margin-bottom:12px;">Chave Pix não configurada. Solicite ao organizador.</div>'}
+      <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar"></div></div>
+      <div class="timer-text" id="timer-text"></div>
+    </div>
+    <div class="waiting-msg">⏳ Após o pagamento, aguarde a confirmação do organizador.</div>
+    <button class="btn-secondary" onclick="closeModal()">Fechar (sua reserva continua ativa)</button>
+  `;
+  showModal(html);
+
+  // Start timer
+  if (timerInterval) clearInterval(timerInterval);
+  function updateTimer() {
+    const remaining = endTime - Date.now();
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      const bar = document.getElementById('timer-bar');
+      const txt = document.getElementById('timer-text');
+      if (bar) bar.style.width = '0%';
+      if (txt) txt.textContent = 'Reserva expirada.';
+      checkExpiredReservations();
+      renderBuyer();
+      return;
+    }
+    const pct = (remaining / (mins * 60 * 1000)) * 100;
+    const bar = document.getElementById('timer-bar');
+    const txt = document.getElementById('timer-text');
+    if (bar) bar.style.width = pct + '%';
+    if (txt) {
+      const m = Math.floor(remaining / 60000);
+      const s = Math.floor((remaining % 60000) / 1000);
+      txt.textContent = `Expira em ${m}:${s.toString().padStart(2,'0')}`;
+    }
+  }
+  updateTimer();
+  timerInterval = setInterval(updateTimer, 1000);
+  renderBuyer();
+}
+
+function copyKey(key) {
+  navigator.clipboard.writeText(key).then(() => toast('Chave Pix copiada!', 'success'));
+}
+
+// ════════════════════════════════════════════
+//  MODAL
+// ════════════════════════════════════════════
+function showModal(html) {
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.add('hidden');
+  if (timerInterval) clearInterval(timerInterval);
+  renderBuyer();
+}
+
+// ════════════════════════════════════════════
+//  ADMIN: PEDIDOS
+// ════════════════════════════════════════════
+function renderAdmin() {
+  renderPedidos();
+  renderAdminLayout();
+  renderConfig();
+}
+
+function renderPedidos() {
+  checkExpiredReservations();
+  const cfg = state.config;
+  const pedidos = state.pedidos.filter(p => p.status !== 'expirado');
+  const confirmados = pedidos.filter(p => p.status === 'confirmado');
+  const aguardando = pedidos.filter(p => p.status === 'aguardando');
+  const receita = confirmados.reduce((s, p) => s + (Number(p.valor) || 0), 0);
+
+  document.getElementById('stat-total').textContent = state.mesas.length;
+  document.getElementById('stat-vendidas').textContent = confirmados.length;
+  document.getElementById('stat-neg').textContent = aguardando.length;
+  document.getElementById('stat-receita').textContent = 'R$ ' + receita.toLocaleString('pt-BR', {minimumFractionDigits:2});
+
+  const tbody = document.getElementById('pedidos-tbody');
+  if (state.pedidos.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum pedido ainda.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = state.pedidos.map(p => {
+    const statusBadge =
+      p.status === 'confirmado' ? '<span class="status-badge confirmado">✓ Confirmado</span>' :
+      p.status === 'expirado' ? '<span class="status-badge expirado">✗ Expirado</span>' :
+      '<span class="status-badge aguardando">⏳ Aguardando</span>';
+
+    const acoes = p.status === 'aguardando' ? `
+      <button class="btn-confirm" onclick="confirmarPedido(${p.id})">Confirmar pag.</button>
+      <button class="btn-expire" onclick="expirarPedido(${p.id})" title="Cancelar reserva">✕</button>
+    ` : '—';
+
+    return `<tr>
+      <td><span class="mono" style="font-weight:600">#${p.mesaId}</span></td>
+      <td>${p.nome}</td>
+      <td><span class="mono">${p.cpf}</span></td>
+      <td>R$ ${Number(p.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+      <td style="color:var(--text2)">${formatDateTime(p.criadoEm)}</td>
+      <td>${statusBadge}</td>
+      <td>${acoes}</td>
+    </tr>`;
+  }).join('');
+}
+
+function confirmarPedido(id) {
+  const pedido = state.pedidos.find(p => p.id === id);
+  if (!pedido) return;
+  pedido.status = 'confirmado';
+  save();
+  renderPedidos();
+  renderBuyer();
+  toast('Pedido confirmado! Mesa ' + pedido.mesaId + ' vendida.', 'success');
+  showRecibo(pedido);
+}
+
+function expirarPedido(id) {
+  const pedido = state.pedidos.find(p => p.id === id);
+  if (!pedido) return;
+  pedido.status = 'expirado';
+  save();
+  renderPedidos();
+  renderBuyer();
+  toast('Reserva da mesa ' + pedido.mesaId + ' cancelada.', 'error');
+}
+
+function showRecibo(pedido) {
+  const cfg = state.config;
+  const html = `
+    <div class="modal-tag" style="background:rgba(34,197,94,0.15);color:var(--verde)">✓ Pagamento confirmado</div>
+    <h2 style="margin-bottom:18px">Recibo de compra</h2>
+    <div class="recibo-card">
+      <div class="recibo-row"><span class="recibo-key">Evento</span><span class="recibo-val">${cfg.nomeEvento}</span></div>
+      ${cfg.dataEvento ? `<div class="recibo-row"><span class="recibo-key">Data</span><span class="recibo-val">${formatDate(cfg.dataEvento)}</span></div>` : ''}
+      <div class="recibo-row"><span class="recibo-key">Mesa</span><span class="recibo-val">#${pedido.mesaId}</span></div>
+      <div class="recibo-row"><span class="recibo-key">Comprador</span><span class="recibo-val">${pedido.nome}</span></div>
+      <div class="recibo-row"><span class="recibo-key">CPF</span><span class="recibo-val">${pedido.cpf}</span></div>
+      <div class="recibo-row"><span class="recibo-key">Valor pago</span><span class="recibo-val">R$ ${Number(pedido.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</span></div>
+      <div class="recibo-row"><span class="recibo-key">Confirmado em</span><span class="recibo-val">${formatDateTime(Date.now())}</span></div>
+      <div class="recibo-row"><span class="recibo-key">Status</span><span class="recibo-badge">✓ Pago</span></div>
+    </div>
+    <button class="btn-secondary" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+  `;
+  showModal(html);
+}
+
+// ════════════════════════════════════════════
+//  ADMIN: LAYOUT
+// ════════════════════════════════════════════
+function renderAdminLayout() {
+  const bg = document.getElementById('layout-bg');
+  if (state.bgImage) {
+    bg.src = state.bgImage;
+    bg.classList.remove('hidden');
+  } else {
+    bg.classList.add('hidden');
+  }
+  renderAdminMesas();
+}
+
+function renderAdminMesas() {
+  const layer = document.getElementById('admin-mesas-layer');
+  layer.innerHTML = '';
+  state.mesas.forEach(mesa => {
+    const status = getMesaStatus(mesa.id);
+    const el = document.createElement('div');
+    el.className = 'admin-mesa ' + status;
+    el.style.left = mesa.x + '%';
+    el.style.top = mesa.y + '%';
+    el.dataset.id = mesa.id;
+    el.innerHTML = `${mesa.id}<span class="delete-btn" onclick="deleteMesa(${mesa.id},event)">✕</span>`;
+    makeDraggable(el, mesa.id);
+    layer.appendChild(el);
+  });
+}
+
+function canvasClick(e) {
+  if (!addMode) return;
+  const wrap = document.getElementById('layout-canvas-wrap');
+  const rect = wrap.getBoundingClientRect();
+  if (e.target.classList.contains('admin-mesa') || e.target.classList.contains('delete-btn')) return;
+
+  const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+  const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+
+  const nextId = state.mesas.length > 0 ? Math.max(...state.mesas.map(m => m.id)) + 1 : 1;
+  state.mesas.push({ id: nextId, x: xPct, y: yPct });
+  save();
+  renderAdminMesas();
+  renderBuyer();
+}
+
+function deleteMesa(id, e) {
+  e.stopPropagation();
+  state.mesas = state.mesas.filter(m => m.id !== id);
+  save();
+  renderAdminMesas();
+  renderBuyer();
+  toast('Mesa ' + id + ' removida.');
+}
+
+function clearAllMesas() {
+  if (!confirm('Remover TODAS as mesas? Esta ação não pode ser desfeita.')) return;
+  state.mesas = [];
+  save();
+  renderAdminMesas();
+  renderBuyer();
+  toast('Todas as mesas foram removidas.');
+}
+
+function setAddMode(v) {
+  addMode = v;
+  const wrap = document.getElementById('layout-canvas-wrap');
+  document.getElementById('btn-add-mode').classList.toggle('active', v);
+  document.getElementById('btn-view-mode').classList.toggle('active', !v);
+  wrap.classList.toggle('viewing', !v);
+}
+
+function makeDraggable(el, id) {
+  let startX, startY, origLeft, origTop;
+
+  el.addEventListener('mousedown', e => {
+    if (e.target.classList.contains('delete-btn')) return;
+    e.preventDefault();
+    el.classList.add('dragging');
+    const wrap = document.getElementById('layout-canvas-wrap');
+    const rect = wrap.getBoundingClientRect();
+    startX = e.clientX;
+    startY = e.clientY;
+    origLeft = parseFloat(el.style.left);
+    origTop = parseFloat(el.style.top);
+
+    function onMove(e) {
+      const dx = ((e.clientX - startX) / rect.width) * 100;
+      const dy = ((e.clientY - startY) / rect.height) * 100;
+      const newX = Math.max(2, Math.min(98, origLeft + dx));
+      const newY = Math.max(2, Math.min(98, origTop + dy));
+      el.style.left = newX + '%';
+      el.style.top = newY + '%';
+    }
+    function onUp(e) {
+      el.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      const wrap = document.getElementById('layout-canvas-wrap');
+      const rect2 = wrap.getBoundingClientRect();
+      const dx = ((e.clientX - startX) / rect2.width) * 100;
+      const dy = ((e.clientY - startY) / rect2.height) * 100;
+      const mesa = state.mesas.find(m => m.id === id);
+      if (mesa) {
+        mesa.x = Math.max(2, Math.min(98, origLeft + dx));
+        mesa.y = Math.max(2, Math.min(98, origTop + dy));
+        save();
+        renderBuyer();
+      }
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+function loadBgImage(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    state.bgImage = ev.target.result;
+    save();
+    renderAdminLayout();
+    renderBuyer();
+    toast('Imagem carregada!', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ════════════════════════════════════════════
+//  ADMIN: CONFIG
+// ════════════════════════════════════════════
+function renderConfig() {
+  const cfg = state.config;
+  document.getElementById('cfg-nome').value = cfg.nomeEvento || '';
+  document.getElementById('cfg-desc').value = cfg.descEvento || '';
+  document.getElementById('cfg-data').value = cfg.dataEvento || '';
+  document.getElementById('cfg-valor').value = cfg.valor || '';
+  document.getElementById('cfg-pix-tipo').value = cfg.pixTipo || 'E-mail';
+  document.getElementById('cfg-pix-chave').value = cfg.pixChave || '';
+  document.getElementById('cfg-pix-nome').value = cfg.pixNome || '';
+  document.getElementById('cfg-max-cpf').value = cfg.maxPorCpf || 2;
+  document.getElementById('cfg-tempo').value = cfg.tempoReserva || 30;
+}
+
+function saveConfig() {
+  const novaSenha = document.getElementById('cfg-senha').value;
+  state.config = {
+    nomeEvento: document.getElementById('cfg-nome').value.trim() || 'Evento',
+    descEvento: document.getElementById('cfg-desc').value.trim(),
+    dataEvento: document.getElementById('cfg-data').value,
+    valor: parseFloat(document.getElementById('cfg-valor').value) || 0,
+    pixTipo: document.getElementById('cfg-pix-tipo').value,
+    pixChave: document.getElementById('cfg-pix-chave').value.trim(),
+    pixNome: document.getElementById('cfg-pix-nome').value.trim(),
+    maxPorCpf: parseInt(document.getElementById('cfg-max-cpf').value) || 2,
+    tempoReserva: parseInt(document.getElementById('cfg-tempo').value) || 30,
+    senha: novaSenha || state.config.senha
+  };
+  if (novaSenha) document.getElementById('cfg-senha').value = '';
+  save();
+  renderBuyer();
+  toast('Configurações salvas!', 'success');
+}
+
+// ════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════
+function formatDate(d) {
+  if (!d) return '';
+  const [y, m, day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+function formatDateTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+}
+
+// ════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════
+renderBuyer();
+</script>
+
+
+</body></html>
