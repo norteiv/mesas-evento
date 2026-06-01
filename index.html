@@ -197,7 +197,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .stat-num{font-size:24px;font-weight:700;letter-spacing:-0.03em;}
 .stat-label{font-size:11px;color:var(--text2);margin-top:2px;}
 .pedidos-table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-.pedidos-table{width:100%;border-collapse:collapse;font-size:13px;min-width:680px;}
+.pedidos-table{width:100%;border-collapse:collapse;font-size:13px;min-width:780px;}
 .pedidos-table th{padding:11px 12px;text-align:left;font-size:10px;font-weight:500;color:var(--text3);background:var(--bg3);letter-spacing:0.05em;text-transform:uppercase;}
 .pedidos-table td{padding:10px 12px;border-top:1px solid var(--border);color:var(--text);vertical-align:middle;}
 .pedidos-table tr:hover td{background:rgba(255,255,255,0.02);}
@@ -354,8 +354,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     </div>
     <div class="pedidos-table-wrap">
       <table class="pedidos-table">
-        <thead><tr><th>Mesa</th><th>Comprador</th><th>Setor/Equipe</th><th>CPF</th><th>Valor</th><th>Horário</th><th>Status</th><th>Ações</th></tr></thead>
-        <tbody id="pedidos-tbody"><tr><td colspan="8" class="empty-state">Nenhum pedido ainda.</td></tr></tbody>
+        <thead><tr><th>Mesa</th><th>Comprador</th><th>Setor/Equipe</th><th>CPF</th><th>WhatsApp</th><th>Valor</th><th>Horário</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="pedidos-tbody"><tr><td colspan="9" class="empty-state">Nenhum pedido ainda.</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -371,8 +371,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
         <button class="btn-outline" id="btn-view-mode" onclick="setAddMode(false)">👁 Visualizar</button>
         <div class="size-slider-wrap">
           <label>Tamanho:</label>
-          <input type="range" id="mesa-size-slider" min="20" max="80" value="36" oninput="updateSizeLabel()">
-          <span id="mesa-size-label">36</span>
+          <input type="range" id="mesa-size-slider" min="2" max="14" value="5" step="0.5" oninput="updateSizeLabel()">
+          <span id="mesa-size-label">5%</span>
         </div>
         <button class="btn-outline" onclick="clearAllMesas()" style="margin-left:auto;color:var(--vermelho)">🗑 Limpar</button>
       </div>
@@ -527,10 +527,10 @@ function renderBuyer(){
     const btn=document.createElement('button');
     btn.className='mesa-btn '+status;
     btn.style.left=mesa.x+'%'; btn.style.top=mesa.y+'%';
-    // tamanho: px absolutos guardados no banco, responsivo via % do container
-    const sz=mesa.tamanho||36;
-    btn.style.width=sz+'px'; btn.style.height=sz+'px';
-    btn.style.fontSize=Math.max(8,Math.round(sz*0.3))+'px';
+    // tamanho em % da largura do container — escala igual em qualquer tela
+    const szPct=(mesa.tamanho||5)+'%';
+    btn.style.width=szPct; btn.style.height=szPct;
+    btn.style.fontSize='calc('+szPct+' * 0.38)';
     btn.textContent=mesa.id;
     btn.title=status==='disponivel'?'Mesa '+mesa.id+' — clique para reservar'
              :status==='negociacao'?'Mesa '+mesa.id+' — em negociação'
@@ -578,6 +578,9 @@ function openBuyModal(mesaId){
     <div class="form-group"><label>CPF</label>
       <input type="text" id="buy-cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" oninput="maskCPF(this);validateBuyForm()">
     </div>
+    <div class="form-group"><label>WhatsApp</label>
+      <input type="tel" id="buy-whatsapp" placeholder="(11) 99999-9999" maxlength="15" inputmode="tel" oninput="maskPhone(this);validateBuyForm()">
+    </div>
     <div class="sector-row">
       <div class="form-group"><label>Setor</label>
         <select id="buy-setor" onchange="onSetorChange();validateBuyForm()">
@@ -610,9 +613,18 @@ function maskCPF(el){
   el.value=v;
 }
 
+function maskPhone(el){
+  let v=el.value.replace(/\D/g,'').slice(0,11);
+  if(v.length>10) v=v.replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3');
+  else if(v.length>6) v=v.replace(/(\d{2})(\d{4})(\d*)/,'($1) $2-$3');
+  else if(v.length>2) v=v.replace(/(\d{2})(\d*)/,'($1) $2');
+  el.value=v;
+}
+
 function validateBuyForm(){
   const nome=document.getElementById('buy-nome')?.value.trim();
   const cpf=document.getElementById('buy-cpf')?.value.replace(/\D/g,'');
+  const wpp=document.getElementById('buy-whatsapp')?.value.replace(/\D/g,'');
   const setor=document.getElementById('buy-setor')?.value;
   const equipe=document.getElementById('buy-equipe')?.value;
   const btn=document.getElementById('btn-ir-pix');
@@ -625,7 +637,7 @@ function validateBuyForm(){
     warn.style.display='block'; btn.disabled=true;
   } else {
     warn.style.display='none';
-    btn.disabled=!(nome&&nome.length>2&&cpf.length===11&&setor&&equipe);
+    btn.disabled=!(nome&&nome.length>2&&cpf.length===11&&(wpp&&wpp.length>=10)&&setor&&equipe);
   }
 }
 
@@ -637,7 +649,8 @@ async function goToPix(mesaId){
   const cfg=state.config;
   const mesaObj=state.mesas.find(m=>m.id===mesaId);
   if(!mesaObj||getMesaStatus(mesaObj)!=='disponivel'){ toast('Esta mesa já foi reservada. Escolha outra.','error'); closeModal(); return; }
-  const pedido={ id:Date.now(), mesa_id:mesaId, nome, cpf, setor, equipe, valor:cfg.valor, criado_em:Date.now(), status:'aguardando' };
+  const wpp=document.getElementById('buy-whatsapp').value.replace(/\D/g,'');
+  const pedido={ id:Date.now(), mesa_id:mesaId, nome, cpf, whatsapp:wpp, setor, equipe, valor:cfg.valor, criado_em:Date.now(), status:'aguardando' };
   const{error}=await sb.from('pedidos').insert(pedido);
   if(error){ toast('Erro ao criar reserva. Tente novamente.','error'); return; }
   state.pedidos.unshift(pedido); renderBuyer();
@@ -649,7 +662,7 @@ async function goToPix(mesaId){
     <p class="modal-subtitle">Mesa ${mesaId} reservada por ${mins} min. Realize o pagamento e aguarde a confirmação.</p>
     <div class="pix-card">
       <div class="pix-amount">R$ ${fmtVal(cfg.valor)}</div>
-      <div class="pix-label">Mesa ${mesaId} • ${nome} • Setor ${setor} / Equipe ${equipe.toString().padStart(2,'0')}</div>
+      <div class="pix-label">Mesa ${mesaId} • ${nome}</div>
       ${cfg.pix_chave?`
         <div class="pix-key-box">
           <div><div class="pix-key-label">${cfg.pix_tipo}</div><div class="pix-key-val">${cfg.pix_chave}</div></div>
@@ -713,11 +726,13 @@ function renderPedidos(){
         <button class="btn-cancel-sale" onclick="cancelarVenda(${p.id})" title="Desfazer venda e liberar mesa">↩ Desfazer venda</button>
       </div>`:'—';
     const setorEquipe=p.setor?`S${p.setor} / E${String(p.equipe||'').padStart(2,'0')}`:'—';
+    const waLink=p.whatsapp?`<a href="https://wa.me/55${p.whatsapp}" target="_blank" style="color:var(--verde);font-size:11px;text-decoration:none;font-family:'JetBrains Mono',monospace">📱 ${p.whatsapp}</a>`:'—';
     return `<tr>
       <td><span class="mono" style="font-weight:600">#${p.mesa_id}</span></td>
       <td>${p.nome}</td>
       <td style="color:var(--text2)">${setorEquipe}</td>
       <td><span class="mono">${p.cpf}</span></td>
+      <td>${waLink}</td>
       <td>R$ ${fmtVal(p.valor)}</td>
       <td style="color:var(--text2)">${formatDateTime(p.criado_em)}</td>
       <td>${badge}</td>
@@ -754,6 +769,7 @@ function mostrarOpcoesPosConfirmacao(pedido){
     <p class="modal-subtitle">O que deseja fazer com o recibo?</p>
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
       <button class="btn-share" onclick="gerarECompartilharRecibo(${pedido.id})">📤 Compartilhar recibo como imagem</button>
+      ${pedido.whatsapp?`<a href="https://wa.me/55${pedido.whatsapp}?text=${encodeURIComponent('✅ Olá '+pedido.nome+'! Seu pagamento foi confirmado. Mesa #'+pedido.mesa_id+' está garantida. Acesse o app para ver seu recibo.')}" target="_blank" class="btn-share" style="background:#25d366;text-decoration:none">💬 Enviar mensagem no WhatsApp</a>`:''}
       <button class="btn-share outline" onclick="verReciboNaTela(${pedido.id})">🖨 Ver recibo / Imprimir</button>
       <button class="btn-secondary" onclick="closeModal()" style="margin-top:0">Fechar sem compartilhar</button>
     </div>
@@ -776,6 +792,7 @@ async function gerarECompartilharRecibo(pedidoId){
         ${reciboLinha('Mesa','#'+pedido.mesa_id)}
         ${reciboLinha('Comprador',pedido.nome)}
         ${reciboLinha('CPF',pedido.cpf)}
+        ${pedido.whatsapp?reciboLinha('WhatsApp',pedido.whatsapp):''}
         ${reciboLinha('Identificação',setorEquipe)}
         ${reciboLinha('Valor','R$ '+fmtVal(pedido.valor))}
         ${reciboLinha('Confirmado em',formatDateTime(Date.now()))}
@@ -832,6 +849,7 @@ function verReciboNaTela(pedidoId){
       <div class="recibo-row"><span class="recibo-key">Mesa</span><span class="recibo-val">#${pedido.mesa_id}</span></div>
       <div class="recibo-row"><span class="recibo-key">Comprador</span><span class="recibo-val">${pedido.nome}</span></div>
       <div class="recibo-row"><span class="recibo-key">CPF</span><span class="recibo-val">${pedido.cpf}</span></div>
+      ${pedido.whatsapp?`<div class="recibo-row"><span class="recibo-key">WhatsApp</span><span class="recibo-val">${pedido.whatsapp}</span></div>`:''}
       <div class="recibo-row"><span class="recibo-key">Identificação</span><span class="recibo-val">${setorEquipe}</span></div>
       <div class="recibo-row"><span class="recibo-key">Valor</span><span class="recibo-val">R$ ${fmtVal(pedido.valor)}</span></div>
       <div class="recibo-row"><span class="recibo-key">Confirmado em</span><span class="recibo-val">${formatDateTime(Date.now())}</span></div>
@@ -855,12 +873,12 @@ function renderAdminMesas(){
   layer.innerHTML='';
   state.mesas.forEach(mesa=>{
     const status=getMesaStatus(mesa);
-    const sz=mesa.tamanho||36;
+    const szPct=(mesa.tamanho||5)+'%';
     const el=document.createElement('div');
     el.className='admin-mesa '+status;
     el.style.left=mesa.x+'%'; el.style.top=mesa.y+'%';
-    el.style.width=sz+'px'; el.style.height=sz+'px';
-    el.style.fontSize=Math.max(8,Math.round(sz*0.3))+'px';
+    el.style.width=szPct; el.style.height=szPct;
+    el.style.fontSize='calc('+szPct+' * 0.38)';
     el.dataset.id=mesa.id;
     const bloqLabel=mesa.bloqueada?'🔓':'🔒';
     const bloqTitle=mesa.bloqueada?'Desbloquear mesa':'Bloquear mesa (indisponível para venda)';
@@ -893,7 +911,7 @@ async function canvasClick(e){
   const xPct=((e.clientX-rect.left)/rect.width)*100;
   const yPct=((e.clientY-rect.top)/rect.height)*100;
   const nextId=state.mesas.length>0?Math.max(...state.mesas.map(m=>m.id))+1:1;
-  const sz=parseInt(document.getElementById('mesa-size-slider')?.value||36);
+  const sz=parseFloat(document.getElementById('mesa-size-slider')?.value||5);
   const newMesa={id:nextId,x:xPct,y:yPct,bloqueada:false,tamanho:sz};
   const{error}=await sb.from('mesas').insert(newMesa);
   if(error){ toast('Erro ao adicionar mesa.','error'); return; }
@@ -988,7 +1006,7 @@ async function saveConfig(){
 // ── HELPERS ──
 function updateSizeLabel(){
   const sl=document.getElementById('mesa-size-slider');
-  if(sl) document.getElementById('mesa-size-label').textContent=sl.value;
+  if(sl) document.getElementById('mesa-size-label').textContent=sl.value+'%';
 }
 function fmtVal(v){ return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function formatDate(d){ if(!d)return''; const[y,m,day]=d.split('-'); return`${day}/${m}/${y}`; }
