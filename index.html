@@ -522,15 +522,17 @@ function renderBuyer(){
 
   const layer=document.getElementById('mesas-layer');
   layer.innerHTML='';
+  // Mede largura real do container para calcular tamanho em px igual nos dois eixos
+  const containerW = document.getElementById('map-container').getBoundingClientRect().width || 400;
   state.mesas.forEach(mesa=>{
     const status=getMesaStatus(mesa);
     const btn=document.createElement('button');
     btn.className='mesa-btn '+status;
     btn.style.left=mesa.x+'%'; btn.style.top=mesa.y+'%';
-    // tamanho em % da largura do container — escala igual em qualquer tela
-    const szPct=(mesa.tamanho||5)+'%';
-    btn.style.width=szPct; btn.style.height=szPct;
-    btn.style.fontSize='calc('+szPct+' * 0.38)';
+    // tamanho em px calculado a partir da % da largura real do container
+    const szPx = Math.round((mesa.tamanho||5) / 100 * containerW);
+    btn.style.width=szPx+'px'; btn.style.height=szPx+'px';
+    btn.style.fontSize=Math.max(8, Math.round(szPx*0.38))+'px';
     btn.textContent=mesa.id;
     btn.title=status==='disponivel'?'Mesa '+mesa.id+' — clique para reservar'
              :status==='negociacao'?'Mesa '+mesa.id+' — em negociação'
@@ -871,14 +873,15 @@ function renderAdminLayout(){
 function renderAdminMesas(){
   const layer=document.getElementById('admin-mesas-layer');
   layer.innerHTML='';
+  const canvasW = document.getElementById('layout-canvas-wrap').getBoundingClientRect().width || 400;
   state.mesas.forEach(mesa=>{
     const status=getMesaStatus(mesa);
-    const szPct=(mesa.tamanho||5)+'%';
+    const szPx = Math.round((mesa.tamanho||5) / 100 * canvasW);
     const el=document.createElement('div');
     el.className='admin-mesa '+status;
     el.style.left=mesa.x+'%'; el.style.top=mesa.y+'%';
-    el.style.width=szPct; el.style.height=szPct;
-    el.style.fontSize='calc('+szPct+' * 0.38)';
+    el.style.width=szPx+'px'; el.style.height=szPx+'px';
+    el.style.fontSize=Math.max(8, Math.round(szPx*0.38))+'px';
     el.dataset.id=mesa.id;
     const bloqLabel=mesa.bloqueada?'🔓':'🔒';
     const bloqTitle=mesa.bloqueada?'Desbloquear mesa':'Bloquear mesa (indisponível para venda)';
@@ -1011,6 +1014,12 @@ function updateSizeLabel(){
 function fmtVal(v){ return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function formatDate(d){ if(!d)return''; const[y,m,day]=d.split('-'); return`${day}/${m}/${y}`; }
 function formatDateTime(ts){ const d=new Date(ts); return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+
+// Re-render mesas on resize to keep circles perfectly round
+window.addEventListener('resize', ()=>{
+  if(document.getElementById('view-buyer') && !document.getElementById('view-buyer').classList.contains('hidden')) renderBuyer();
+  if(isLoggedIn && document.getElementById('tab-layout') && document.getElementById('tab-layout').classList.contains('active')) renderAdminMesas();
+});
 
 init();
 </script>
