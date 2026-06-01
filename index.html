@@ -287,7 +287,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     </div>
 
     <div class="privacy-box">
-      🔒 Coletamos seu nome, CPF, setor e equipe exclusivamente para controle das vendas deste evento. Nenhum dado é compartilhado com terceiros. Ao continuar, você concorda com o uso dessas informações para essa finalidade.
+      🔒 Coletamos seu nome, CPF, número de WhatsApp, setor e equipe exclusivamente para controle das vendas e envio do recibo deste evento. Nenhum dado é compartilhado com terceiros. Ao continuar, você concorda com o uso dessas informações para essa finalidade.
     </div>
 
     <button class="btn-start" onclick="showView('buyer')">Escolher minha mesa →</button>
@@ -914,7 +914,7 @@ async function canvasClick(e){
   const xPct=((e.clientX-rect.left)/rect.width)*100;
   const yPct=((e.clientY-rect.top)/rect.height)*100;
   const nextId=state.mesas.length>0?Math.max(...state.mesas.map(m=>m.id))+1:1;
-  const sz=parseFloat(document.getElementById('mesa-size-slider')?.value||5);
+  const sz=parseFloat((document.getElementById('mesa-size-slider')?.value||5));
   const newMesa={id:nextId,x:xPct,y:yPct,bloqueada:false,tamanho:sz};
   const{error}=await sb.from('mesas').insert(newMesa);
   if(error){ toast('Erro ao adicionar mesa.','error'); return; }
