@@ -647,7 +647,8 @@ function validateBuyForm(){
   const btn=document.getElementById('btn-ir-pix');
   const warn=document.getElementById('cpf-warn');
   if(!btn) return;
-  const bought=state.pedidos.filter(p=>p.cpf===cpf&&p.status==='confirmado').length;
+  // cpf já está sem máscara (só dígitos) — comparação direta
+  const bought=state.pedidos.filter(p=>p.cpf.replace(/\D/g,'')===cpf&&p.status==='confirmado').length;
   const max=state.config.max_por_cpf||2;
   if(cpf.length===11&&bought>=max){
     warn.textContent=`Este CPF já possui ${bought} mesa(s) confirmada(s). Limite: ${max}.`;
@@ -660,21 +661,32 @@ function validateBuyForm(){
 
 async function goToPix(mesaId){
   const nome=document.getElementById('buy-nome').value.trim();
-  const cpf=document.getElementById('buy-cpf').value.trim();
+  // CPF SEMPRE sem máscara — único formato salvo no banco
+  const cpf=document.getElementById('buy-cpf').value.replace(/\D/g,'');
   const setor=document.getElementById('buy-setor').value;
   const equipe=document.getElementById('buy-equipe').value;
   const cfg=state.config;
   const mesaObj=state.mesas.find(m=>m.id===mesaId);
   if(!mesaObj||getMesaStatus(mesaObj)!=='disponivel'){ toast('Esta mesa já foi reservada. Escolha outra.','error'); closeModal(); return; }
-  const cpfLimite=cpf.replace(/\D/g,'');
-  const jaTem=state.pedidos.filter(p=>p.cpf===cpfLimite&&p.status==='confirmado').length;
-  if(jaTem>=(state.config.max_por_cpf||2)){ toast('Limite de mesas por CPF atingido.','error'); closeModal(); return; }
-  const wpp=document.getElementById('buy-whatsapp').value.replace(/\D/g,'');
 
-  // Mostra loading enquanto salva
+  // Mostra loading
   document.getElementById('btn-ir-pix').disabled=true;
+  document.getElementById('btn-ir-pix').textContent='Verificando...';
+
+  // Consulta o banco diretamente — evita cache desatualizado no state
+  const{data:pedidosBanco}=await sb.from('pedidos').select('cpf,status').eq('cpf',cpf).eq('status','confirmado');
+  const jaTem=(pedidosBanco||[]).length;
+  const max=Number(state.config.max_por_cpf)||2;
+  if(jaTem>=max){
+    toast('Este CPF já possui '+jaTem+' mesa(s) confirmada(s). Limite: '+max+'.','error');
+    document.getElementById('btn-ir-pix').disabled=false;
+    document.getElementById('btn-ir-pix').textContent='\u2705 Confirmar reserva';
+    return;
+  }
+
   document.getElementById('btn-ir-pix').textContent='Reservando...';
 
+  const wpp=document.getElementById('buy-whatsapp').value.replace(/\D/g,'');
   const pedido={ id:Date.now(), mesa_id:mesaId, nome, cpf, whatsapp:wpp, setor, equipe, valor:cfg.valor, criado_em:Date.now(), status:'aguardando' };
   const{error}=await sb.from('pedidos').insert(pedido);
   if(error){ toast('Erro ao criar reserva. Tente novamente.','error'); document.getElementById('btn-ir-pix').disabled=false; document.getElementById('btn-ir-pix').textContent='✅ Confirmar reserva'; return; }
