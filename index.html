@@ -647,11 +647,11 @@ function validateBuyForm(){
   const btn=document.getElementById('btn-ir-pix');
   const warn=document.getElementById('cpf-warn');
   if(!btn) return;
-  // cpf já está sem máscara (só dígitos) — comparação direta
-  const bought=state.pedidos.filter(p=>p.cpf.replace(/\D/g,'')===cpf&&p.status==='confirmado').length;
+  // conta confirmado E aguardando — reserva ativa já bloqueia nova reserva
+  const bought=state.pedidos.filter(p=>p.cpf.replace(/\D/g,'')===cpf&&(p.status==='confirmado'||p.status==='aguardando')).length;
   const max=state.config.max_por_cpf||2;
   if(cpf.length===11&&bought>=max){
-    warn.textContent=`Este CPF já possui ${bought} mesa(s) confirmada(s). Limite: ${max}.`;
+    warn.textContent=`Este CPF já possui ${bought} mesa(s) reservada(s)/confirmada(s). Limite: ${max}.`;
     warn.style.display='block'; btn.disabled=true;
   } else {
     warn.style.display='none';
@@ -674,11 +674,11 @@ async function goToPix(mesaId){
   document.getElementById('btn-ir-pix').textContent='Verificando...';
 
   // Consulta o banco diretamente — evita cache desatualizado no state
-  const{data:pedidosBanco}=await sb.from('pedidos').select('cpf,status').eq('cpf',cpf).eq('status','confirmado');
+  const{data:pedidosBanco}=await sb.from('pedidos').select('cpf,status').eq('cpf',cpf).in('status',['confirmado','aguardando']);
   const jaTem=(pedidosBanco||[]).length;
   const max=Number(state.config.max_por_cpf)||2;
   if(jaTem>=max){
-    toast('Este CPF já possui '+jaTem+' mesa(s) confirmada(s). Limite: '+max+'.','error');
+    toast('Este CPF já possui '+jaTem+' mesa(s) reservada(s) ou confirmada(s). Limite: '+max+'.','error');
     document.getElementById('btn-ir-pix').disabled=false;
     document.getElementById('btn-ir-pix').textContent='\u2705 Confirmar reserva';
     return;
