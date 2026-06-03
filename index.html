@@ -9,27 +9,36 @@
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
 :root {
-  --verde:#22c55e; --verde-light:#dcfce7; --verde-dark:#15803d;
-  --amarelo:#f59e0b; --amarelo-light:#fef3c7; --amarelo-dark:#92400e;
-  --vermelho:#ef4444; --vermelho-light:#fee2e2; --vermelho-dark:#991b1b;
+  /* Mesa status */
+  --verde:#16a34a; --verde-light:#dcfce7; --verde-dark:#14532d;
+  --amarelo:#d97706; --amarelo-light:#fef3c7; --amarelo-dark:#78350f;
+  --vermelho:#dc2626; --vermelho-light:#fee2e2; --vermelho-dark:#7f1d1d;
   --cinza:#6b7280; --cinza-light:#f3f4f6; --cinza-dark:#374151;
-  --bg:#0f0f13; --bg2:#18181f; --bg3:#22222c;
-  --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.14);
-  --text:#f1f0f5; --text2:#9898b0; --text3:#5a5a72;
-  --accent:#a78bfa; --accent-light:rgba(167,139,250,0.15);
+  /* Paleta festa junina */
+  --bg:#0d2b55;          /* azul escuro da bandeira */
+  --bg2:#12366b;         /* azul médio */
+  --bg3:#1a4480;         /* azul mais claro */
+  --border:rgba(255,220,80,0.18);   /* amarelo festa */
+  --border2:rgba(255,220,80,0.32);
+  --text:#fff9e6;        /* branco quente */
+  --text2:#fde68a;       /* amarelo claro */
+  --text3:#93c5fd;       /* azul claro */
+  --accent:#f97316;      /* laranja festa */
+  --accent-light:rgba(249,115,22,0.18);
+  --accent2:#fbbf24;     /* amarelo bandeirinha */
   --radius:12px; --radius-sm:8px; --radius-lg:18px;
-  --shadow:0 4px 24px rgba(0,0,0,0.4);
+  --shadow:0 4px 24px rgba(0,0,0,0.5);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body{font-family:'Sora',sans-serif;background:linear-gradient(160deg,#0d2b55 0%,#1a4480 60%,#0d2b55 100%);color:var(--text);min-height:100vh;overflow-x:hidden;}
 body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:0.4;}
 .hidden{display:none!important;}
 .mono{font-family:'JetBrains Mono',monospace;}
 
 /* HEADER */
-#app-header{position:sticky;top:0;z-index:100;background:rgba(15,15,19,0.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;}
+#app-header{position:sticky;top:0;z-index:100;background:rgba(13,43,85,0.95);backdrop-filter:blur(20px);border-bottom:2px solid var(--accent2);padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;}
 .header-brand{display:flex;align-items:center;gap:10px;min-width:0;}
-.brand-dot{flex-shrink:0;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:pulse-dot 2s ease-in-out infinite;}
+.brand-dot{flex-shrink:0;width:8px;height:8px;border-radius:50%;background:var(--accent2);box-shadow:0 0 12px var(--accent2);animation:pulse-dot 2s ease-in-out infinite;}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(0.8)}}
 .brand-name{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .brand-event{font-size:11px;color:var(--text2);font-weight:400;}
@@ -44,19 +53,19 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 /* ══ WELCOME SCREEN ══ */
 #view-welcome{position:relative;z-index:1;min-height:calc(100vh - 56px);display:flex;align-items:center;justify-content:center;padding:24px 20px;}
-.welcome-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:36px 28px;width:100%;max-width:520px;}
+.welcome-card{background:rgba(18,54,107,0.97);border:2px solid var(--accent2);border-radius:var(--radius-lg);padding:36px 28px;width:100%;max-width:520px;box-shadow:0 0 40px rgba(251,191,36,0.15);}
 .welcome-emoji{font-size:48px;margin-bottom:16px;display:block;text-align:center;}
-.welcome-title{font-size:clamp(22px,5vw,32px);font-weight:700;letter-spacing:-0.03em;text-align:center;margin-bottom:6px;}
+.welcome-title{font-size:clamp(22px,5vw,32px);font-weight:700;letter-spacing:-0.03em;text-align:center;margin-bottom:6px;color:var(--accent2);text-shadow:0 2px 12px rgba(251,191,36,0.4);}
 .welcome-subtitle{font-size:13px;color:var(--text2);text-align:center;margin-bottom:28px;}
 .steps-list{display:flex;flex-direction:column;gap:12px;margin-bottom:24px;}
-.step{display:flex;align-items:flex-start;gap:12px;background:var(--bg3);border-radius:var(--radius-sm);padding:12px 14px;}
-.step-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--accent-light);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.step{display:flex;align-items:flex-start;gap:12px;background:rgba(13,43,85,0.7);border:1px solid rgba(255,220,80,0.15);border-radius:var(--radius-sm);padding:12px 14px;}
+.step-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--accent);color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;}
 .step-text{font-size:13px;color:var(--text2);line-height:1.55;}
 .step-text strong{color:var(--text);}
-.privacy-box{background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.2);border-radius:var(--radius-sm);padding:12px 14px;font-size:12px;color:var(--text3);line-height:1.55;margin-bottom:22px;text-align:center;}
+.privacy-box{background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.25);border-radius:var(--radius-sm);padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.55;margin-bottom:22px;text-align:center;}
 .privacy-box a{color:var(--accent);text-decoration:none;}
-.btn-start{width:100%;background:linear-gradient(135deg,var(--accent),#8b5cf6);color:white;border:none;border-radius:var(--radius-sm);padding:16px;font-size:15px;font-weight:700;font-family:'Sora',sans-serif;cursor:pointer;transition:all 0.2s;letter-spacing:-0.01em;}
-.btn-start:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(139,92,246,0.4);}
+.btn-start{width:100%;background:linear-gradient(135deg,#f97316,#fbbf24);color:#7c2d12;border:none;border-radius:var(--radius-sm);padding:16px;font-size:15px;font-weight:700;font-family:'Sora',sans-serif;cursor:pointer;transition:all 0.2s;letter-spacing:-0.01em;text-shadow:0 1px 2px rgba(255,255,255,0.3);}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(251,191,36,0.45);}
 .btn-start:active{transform:translateY(0);}
 
 /* BUYER */
@@ -69,7 +78,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
 
 /* MAP */
-#map-container{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px;}
+#map-container{position:relative;background:var(--bg2);border:2px solid var(--border2);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px;}
 #map-container.no-image{min-height:300px;}
 #map-bg-img{display:block;width:100%;height:100%;object-fit:cover;opacity:0.38;position:absolute;inset:0;}
 #map-bg-placeholder{display:flex;align-items:center;justify-content:center;min-height:300px;flex-direction:column;gap:10px;}
@@ -89,11 +98,11 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);backdrop-filter:blur(10px);z-index:200;display:flex;align-items:flex-end;justify-content:center;padding:12px;animation:fadeIn 0.2s ease;}
 @media(min-width:600px){.modal-overlay{align-items:center;padding:20px;}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:24px 20px;width:100%;max-width:440px;animation:slideUp 0.28s cubic-bezier(0.34,1.2,0.64,1);position:relative;max-height:92vh;overflow-y:auto;}
+.modal{background:var(--bg2);border:2px solid var(--border2);border-radius:var(--radius-lg);padding:24px 20px;width:100%;max-width:440px;animation:slideUp 0.28s cubic-bezier(0.34,1.2,0.64,1);position:relative;max-height:92vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6);}
 @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
 .modal-close{position:absolute;top:14px;right:14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text2);transition:all 0.15s;z-index:5;}
 .modal-close:hover{color:var(--text);background:var(--border);}
-.modal-tag{display:inline-flex;align-items:center;gap:6px;background:var(--accent-light);color:var(--accent);font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;margin-bottom:12px;letter-spacing:0.04em;}
+.modal-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(249,115,22,0.15);color:var(--accent);font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;margin-bottom:12px;letter-spacing:0.04em;}
 .modal h2{font-size:19px;font-weight:700;letter-spacing:-0.02em;margin-bottom:5px;padding-right:36px;}
 .modal-subtitle{font-size:13px;color:var(--text2);margin-bottom:18px;}
 .form-group{margin-bottom:12px;}
@@ -103,13 +112,13 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .form-group input:focus,.form-group select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(167,139,250,0.12);}
 .form-group input::placeholder{color:var(--text3);}
 .sector-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.btn-primary{width:100%;background:var(--accent);color:white;border:none;border-radius:var(--radius-sm);padding:14px;font-size:14px;font-weight:600;font-family:'Sora',sans-serif;cursor:pointer;transition:all 0.18s;margin-top:4px;}
-.btn-primary:hover{background:#8b5cf6;transform:translateY(-1px);box-shadow:0 6px 20px rgba(139,92,246,0.35);}
+.btn-primary{width:100%;background:linear-gradient(135deg,#f97316,#fbbf24);color:#7c2d12;border:none;border-radius:var(--radius-sm);padding:14px;font-size:14px;font-weight:600;font-family:'Sora',sans-serif;cursor:pointer;transition:all 0.18s;margin-top:4px;}
+.btn-primary:hover{background:linear-gradient(135deg,#ea6c00,#f59e0b);transform:translateY(-1px);box-shadow:0 6px 20px rgba(251,191,36,0.4);}
 .btn-primary:active{transform:translateY(0);}
 .btn-primary:disabled{opacity:0.45;cursor:not-allowed;transform:none;box-shadow:none;}
 
 /* PIX */
-.pix-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:18px;text-align:center;margin:14px 0;}
+.pix-card{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:18px;text-align:center;margin:14px 0;}
 .pix-amount{font-size:26px;font-weight:700;color:var(--text);letter-spacing:-0.03em;margin-bottom:3px;}
 .pix-label{font-size:12px;color:var(--text2);margin-bottom:14px;}
 .pix-key-box{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
@@ -132,7 +141,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 /* LOGIN */
 #view-login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;z-index:1;}
-.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px 28px;width:100%;max-width:360px;text-align:center;}
+.login-card{background:var(--bg2);border:2px solid var(--border2);border-radius:var(--radius-lg);padding:32px 28px;width:100%;max-width:360px;text-align:center;}
 .login-card h2{font-size:20px;font-weight:700;margin-bottom:6px;letter-spacing:-0.02em;}
 .login-card p{font-size:13px;color:var(--text2);margin-bottom:22px;}
 #login-error{color:var(--vermelho);font-size:12px;margin-top:8px;min-height:16px;}
@@ -143,16 +152,16 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .admin-header h1{font-size:20px;font-weight:700;letter-spacing:-0.03em;}
 .btn-danger-sm{background:none;border:1px solid rgba(239,68,68,0.4);color:var(--vermelho);border-radius:var(--radius-sm);padding:7px 14px;font-size:12px;font-family:'Sora',sans-serif;cursor:pointer;transition:all 0.15s;}
 .btn-danger-sm:hover{background:rgba(239,68,68,0.1);}
-.admin-tabs{display:flex;gap:3px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:4px;margin-bottom:20px;width:fit-content;flex-wrap:wrap;}
+.admin-tabs{display:flex;gap:3px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:4px;margin-bottom:20px;width:fit-content;flex-wrap:wrap;}
 .admin-tab{padding:7px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--text2);font-family:'Sora',sans-serif;transition:all 0.15s;}
-.admin-tab.active{background:var(--bg3);color:var(--text);}
+.admin-tab.active{background:var(--accent);color:white;}
 .admin-tab:hover:not(.active){color:var(--text);}
 .admin-panel{display:none;}
 .admin-panel.active{display:block;}
 
 /* CONFIG */
 .config-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
-.config-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+.config-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:18px;}
 .config-card h3{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:0.05em;}
 .config-field{margin-bottom:11px;}
 .config-field label{display:block;font-size:12px;color:var(--text2);margin-bottom:4px;}
@@ -160,8 +169,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .config-field input:focus,.config-field select:focus,.config-field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(167,139,250,0.1);}
 .config-field select option{background:var(--bg3);}
 .config-field textarea{resize:vertical;min-height:66px;}
-.btn-save{background:var(--accent);color:white;border:none;border-radius:var(--radius-sm);padding:9px 18px;font-size:13px;font-weight:600;font-family:'Sora',sans-serif;cursor:pointer;transition:all 0.15s;margin-top:6px;}
-.btn-save:hover{background:#8b5cf6;}
+.btn-save{background:linear-gradient(135deg,#f97316,#fbbf24);color:#7c2d12;border:none;border-radius:var(--radius-sm);padding:9px 18px;font-size:13px;font-weight:600;font-family:'Sora',sans-serif;cursor:pointer;transition:all 0.15s;margin-top:6px;}
+.btn-save:hover{filter:brightness(1.08);}
 
 /* LAYOUT EDITOR */
 .layout-editor-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;}
@@ -193,7 +202,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
 /* PEDIDOS */
 .pedidos-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:18px;}
-.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;}
+.stat-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:14px;text-align:center;}
 .stat-num{font-size:24px;font-weight:700;letter-spacing:-0.03em;}
 .stat-label{font-size:11px;color:var(--text2);margin-top:2px;}
 .pedidos-table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch;}
@@ -222,8 +231,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .recibo-val{font-weight:500;color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right;word-break:break-word;}
 .recibo-badge{background:var(--verde-light);color:var(--verde-dark);padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;}
 .share-btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
-.btn-share{flex:1;min-width:120px;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--accent);color:white;border:none;border-radius:var(--radius-sm);padding:12px;font-size:13px;font-weight:600;font-family:'Sora',sans-serif;cursor:pointer;transition:all 0.18s;}
-.btn-share:hover{background:#8b5cf6;transform:translateY(-1px);}
+.btn-share{flex:1;min-width:120px;display:flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(135deg,#f97316,#fbbf24);color:#7c2d12;border:none;border-radius:var(--radius-sm);padding:12px;font-size:13px;font-weight:600;font-family:'Sora',sans-serif;cursor:pointer;transition:all 0.18s;}
+.btn-share:hover{filter:brightness(1.08);transform:translateY(-1px);}
 .btn-share.outline{background:var(--bg2);color:var(--text2);border:1px solid var(--border2);}
 .btn-share.outline:hover{color:var(--text);background:var(--bg3);transform:none;}
 .share-generating{text-align:center;padding:20px;color:var(--text3);font-size:13px;}
@@ -278,7 +287,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       </div>
       <div class="step">
         <div class="step-num">3</div>
-        <div class="step-text">Sua mesa fica <strong>reservada por <span id="welcome-tempo">30</span> minutos</strong> enquanto você realiza o pagamento via Pix. Após esse prazo, a reserva é cancelada automaticamente.</div>
+        <div class="step-text">Sua mesa fica <strong>reservada por <span id="welcome-tempo">2</span> horas</strong> enquanto você realiza o pagamento via Pix. Após esse prazo, a reserva é cancelada automaticamente.</div>
       </div>
       <div class="step">
         <div class="step-num">4</div>
@@ -389,7 +398,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <div class="config-grid">
       <div class="config-card">
         <h3>📋 Evento</h3>
-        <div class="config-field"><label>Nome do evento</label><input id="cfg-nome" type="text" placeholder="Ex: Arraial das ENS 2025"></div>
+        <div class="config-field"><label>Nome do evento</label><input id="cfg-nome" type="text" placeholder="Ex: Arraial da Norte IV 2025"></div>
         <div class="config-field"><label>Descrição curta</label><textarea id="cfg-desc" placeholder="Ex: Garanta sua mesa!"></textarea></div>
         <div class="config-field"><label>Data do evento</label><input id="cfg-data" type="date"></div>
         <button class="btn-save" onclick="saveConfig()">Salvar</button>
@@ -407,7 +416,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="config-card">
         <h3>⚙️ Regras</h3>
         <div class="config-field"><label>Mesas máximas por CPF</label><input id="cfg-max-cpf" type="number" min="1" max="20" placeholder="2"></div>
-        <div class="config-field"><label>Tempo de reserva (minutos)</label><input id="cfg-tempo" type="number" min="5" max="120" placeholder="30"></div>
+        <div class="config-field"><label>Tempo de reserva (horas)</label><input id="cfg-tempo" type="number" min="1" max="72" step="0.5" placeholder="2"></div>
         <div class="config-field"><label>Nova senha do admin</label><input id="cfg-senha" type="password" placeholder="Deixe em branco para manter"></div>
         <button class="btn-save" onclick="saveConfig()">Salvar</button>
       </div>
@@ -429,7 +438,7 @@ const SUPABASE_KEY = 'sb_publishable_d_ZqB0jzYcu5NoM3nYQjgw_dEDhT9T8';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let state = {
-  config:{ nome_evento:'Arraial das ENS', desc_evento:'', data_evento:'', valor:150, pix_tipo:'E-mail', pix_chave:'', pix_nome:'', max_por_cpf:2, tempo_reserva:30, senha:'admin123', bg_image:'' },
+  config:{ nome_evento:'Arraial da Norte IV', desc_evento:'', data_evento:'', valor:150, pix_tipo:'E-mail', pix_chave:'', pix_nome:'', max_por_cpf:2, tempo_reserva:30, senha:'admin123', bg_image:'' },
   mesas:[], pedidos:[]
 };
 let isLoggedIn=false, addMode=true, timerInterval=null;
@@ -467,8 +476,10 @@ function renderWelcome(){
   document.getElementById('header-event-name').textContent=cfg.nome_evento;
   document.getElementById('header-event-sub').textContent=cfg.data_evento?formatDate(cfg.data_evento):'';
   const dateEl=document.getElementById('welcome-date');
-  dateEl.textContent=cfg.data_evento?formatDate(cfg.data_evento):'';
-  document.getElementById('welcome-tempo').textContent=cfg.tempo_reserva||30;
+  if(cfg.data_evento){
+    dateEl.innerHTML=`<span style="background:linear-gradient(135deg,#f97316,#fbbf24);color:#7c2d12;font-weight:700;padding:4px 14px;border-radius:99px;font-size:14px;letter-spacing:0.03em">📅 ${formatDate(cfg.data_evento)}</span>`;
+  } else { dateEl.textContent=''; }
+  document.getElementById('welcome-tempo').textContent=cfg.tempo_reserva||2;
 }
 
 document.getElementById('btn-admin-toggle').addEventListener('click',()=>{ isLoggedIn?showView('admin'):showView('login'); });
@@ -555,21 +566,25 @@ function checkExpiredReservations(){
   const agora=Date.now();
   state.pedidos.forEach(async p=>{
     if(p.status==='aguardando'){
-      const mins=state.config.tempo_reserva||30;
-      if(agora-p.criado_em>mins*60*1000){ await sb.from('pedidos').update({status:'expirado'}).eq('id',p.id); p.status='expirado'; }
+      const horas=state.config.tempo_reserva||2;
+      if(agora-p.criado_em>horas*60*60*1000){ await sb.from('pedidos').update({status:'expirado'}).eq('id',p.id); p.status='expirado'; }
     }
   });
 }
 
 // ── BUY MODAL ──
 function buildEquipeOptions(setor){
-  const max=setor==='A'?18:15;
+  const max=setor==='A'?18:16;
   let opts='<option value="">Selecione a equipe</option>';
   for(let i=1;i<=max;i++) opts+=`<option value="${i}">${i.toString().padStart(2,'0')}</option>`;
   return opts;
 }
 
 function openBuyModal(mesaId){
+  // Reset zoom no celular — reseta a viewport scale para 1
+  const vp=document.querySelector('meta[name=viewport]');
+  if(vp){ vp.setAttribute('content','width=device-width, initial-scale=1, maximum-scale=1'); }
+  setTimeout(()=>{ if(vp) vp.setAttribute('content','width=device-width, initial-scale=1'); },400);
   showModal(`
     <div class="modal-tag">🪑 Mesa ${mesaId}</div>
     <h2>Reservar mesa ${mesaId}</h2>
@@ -651,40 +666,66 @@ async function goToPix(mesaId){
   const cfg=state.config;
   const mesaObj=state.mesas.find(m=>m.id===mesaId);
   if(!mesaObj||getMesaStatus(mesaObj)!=='disponivel'){ toast('Esta mesa já foi reservada. Escolha outra.','error'); closeModal(); return; }
+  // Reconfirma limite de CPF no momento da criação
+  const cpfLimite=document.getElementById('buy-cpf').value.replace(/\D/g,'');
+  const jaTem=state.pedidos.filter(p=>p.cpf===cpfLimite&&p.status==='confirmado').length;
+  if(jaTem>=(state.config.max_por_cpf||2)){ toast('Limite de mesas por CPF atingido.','error'); closeModal(); return; }
   const wpp=document.getElementById('buy-whatsapp').value.replace(/\D/g,'');
   const pedido={ id:Date.now(), mesa_id:mesaId, nome, cpf, whatsapp:wpp, setor, equipe, valor:cfg.valor, criado_em:Date.now(), status:'aguardando' };
   const{error}=await sb.from('pedidos').insert(pedido);
   if(error){ toast('Erro ao criar reserva. Tente novamente.','error'); return; }
   state.pedidos.unshift(pedido); renderBuyer();
-  const mins=cfg.tempo_reserva||30;
-  const endTime=pedido.criado_em+mins*60*1000;
+  // Abre WhatsApp automaticamente com aviso de reserva (sem API — usa wa.me)
+  if(wpp && wpp.length>=10){
+    const horasWa=cfg.tempo_reserva||2;
+    const horasWaTexto=horasWa===1?'1 hora':(Number.isInteger(Number(horasWa))?horasWa+' horas':horasWa+' horas');
+    const msgWa=encodeURIComponent(
+      '🎉 Olá '+nome+'! Sua mesa *#'+mesaId+'* do *Arraial da Norte IV* está reservada!\n\n'+
+      '⏰ Você tem *'+horasWaTexto+'* para realizar o pagamento via Pix.\n\n'+
+      '💰 Valor: *R$ '+fmtVal(cfg.valor)+'*\n'+
+      (cfg.pix_chave?'🔑 Chave Pix ('+cfg.pix_tipo+'): *'+cfg.pix_chave+'*\n\n':'\n')+
+      'Após a confirmação do pagamento, você receberá o comprovante aqui pelo WhatsApp. 🤠🎊'
+    );
+    // Abre em nova aba para não fechar o modal
+    setTimeout(()=>window.open('https://wa.me/55'+wpp+'?text='+msgWa,'_blank'),600);
+  }
+  const horas=cfg.tempo_reserva||2;
+  const endTime=pedido.criado_em+horas*60*60*1000;
+  const horasTexto=horas===1?'1 hora':(Number.isInteger(horas)?horas+' horas':horas+' horas');
   showModal(`
-    <div class="modal-tag">💳 Pix</div>
-    <h2>Efetue o pagamento</h2>
-    <p class="modal-subtitle">Mesa ${mesaId} reservada por ${mins} min. Realize o pagamento e aguarde a confirmação.</p>
+    <div class="modal-tag" style="background:rgba(22,163,74,0.15);color:#16a34a">🎉 Mesa reservada!</div>
+    <h2 style="color:var(--accent2)">Mesa #${mesaId} é sua!</h2>
+    <p class="modal-subtitle" style="line-height:1.7">
+      Sua mesa está reservada${wpp?` e enviamos o aviso para o WhatsApp <strong style="color:var(--accent2)">(${pedido.whatsapp.replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3')})</strong>`:''}.<br>
+      Agora é só realizar o pagamento via Pix. Você tem <strong style="color:var(--accent2)">${horasTexto}</strong> — após esse prazo a reserva é cancelada automaticamente.
+    </p>
     <div class="pix-card">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Valor a pagar</div>
       <div class="pix-amount">R$ ${fmtVal(cfg.valor)}</div>
-      <div class="pix-label">Mesa ${mesaId} • ${nome}</div>
+      <div class="pix-label">Mesa #${mesaId} • ${nome}</div>
       ${cfg.pix_chave?`
+        <div style="font-size:12px;color:var(--text2);margin:10px 0 6px;text-align:left">Copie a chave Pix e cole no app do seu banco:</div>
         <div class="pix-key-box">
           <div><div class="pix-key-label">${cfg.pix_tipo}</div><div class="pix-key-val">${cfg.pix_chave}</div></div>
           <button class="btn-copy" onclick="copyKey('${cfg.pix_chave}')">Copiar</button>
         </div>
-        ${cfg.pix_nome?`<div style="font-size:11px;color:var(--text3);margin-bottom:10px">Favorecido: ${cfg.pix_nome}</div>`:''}
+        ${cfg.pix_nome?`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Favorecido: ${cfg.pix_nome}</div>`:''}
       `:'<div style="font-size:13px;color:var(--text3);margin-bottom:12px">Chave Pix não configurada. Solicite ao organizador.</div>'}
       <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar" style="width:100%"></div></div>
       <div class="timer-text" id="timer-text"></div>
     </div>
-    <div class="waiting-msg">⏳ Após o pagamento, aguarde a confirmação do organizador.</div>
-    <button class="btn-secondary" onclick="closeModal()">Fechar (reserva continua ativa)</button>
+    <div class="waiting-msg" style="background:rgba(22,163,74,0.12);color:#16a34a;border:1px solid rgba(22,163,74,0.25)">
+      ✅ Após a confirmação do pagamento, você receberá o comprovante pelo WhatsApp.
+    </div>
+    <button class="btn-secondary" onclick="closeModal()">Fechar — minha reserva continua ativa</button>
   `);
   if(timerInterval) clearInterval(timerInterval);
   function tick(){
     const rem=endTime-Date.now();
     const bar=document.getElementById('timer-bar'), txt=document.getElementById('timer-text');
     if(rem<=0){ clearInterval(timerInterval); if(bar)bar.style.width='0%'; if(txt)txt.textContent='Reserva expirada.'; checkExpiredReservations(); renderBuyer(); return; }
-    if(bar) bar.style.width=((rem/(mins*60*1000))*100)+'%';
-    if(txt){ const m=Math.floor(rem/60000),s=Math.floor((rem%60000)/1000); txt.textContent=`Expira em ${m}:${s.toString().padStart(2,'0')}`; }
+    if(bar) bar.style.width=((rem/(horas*60*60*1000))*100)+'%';
+    if(txt){ const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000); txt.textContent=`Expira em ${h}h${m.toString().padStart(2,'0')}min`; }
   }
   tick(); timerInterval=setInterval(tick,1000);
 }
@@ -728,7 +769,12 @@ function renderPedidos(){
         <button class="btn-confirm" style="background:var(--accent)" onclick="reenviarRecibo(${p.id})" title="Reenviar recibo">📤 Reenviar</button>
         <button class="btn-cancel-sale" onclick="cancelarVenda(${p.id})" title="Desfazer venda e liberar mesa">↩ Desfazer</button>
       </div>`
-      :(p.status==='cancelado'||p.status==='expirado')?`
+      :(p.status==='expirado')?`
+      <div class="acoes-cell">
+        <button class="btn-confirm" style="background:#0369a1" onclick="renovarReserva(${p.id})" title="Renovar reserva">🔄 Renovar</button>
+        <button class="btn-cancel-sale" onclick="excluirRegistro(${p.id})" title="Excluir este registro" style="border-color:rgba(239,68,68,0.6)">🗑 Excluir</button>
+      </div>`
+      :(p.status==='cancelado')?`
       <div class="acoes-cell">
         <button class="btn-cancel-sale" onclick="excluirRegistro(${p.id})" title="Excluir este registro" style="border-color:rgba(239,68,68,0.6)">🗑 Excluir</button>
       </div>`:'—';
@@ -772,6 +818,27 @@ async function reenviarRecibo(id){
   const pedido=state.pedidos.find(p=>p.id===id);
   if(!pedido) return;
   mostrarOpcoesPosConfirmacao(pedido);
+}
+
+async function renovarReserva(id){
+  const pedido=state.pedidos.find(p=>p.id===id);
+  if(!pedido){ toast('Pedido não encontrado.','error'); return; }
+  // Verifica se a mesa está disponível
+  const mesaObj=state.mesas.find(m=>m.id===pedido.mesa_id);
+  if(!mesaObj){ toast('Mesa não existe mais no layout.','error'); return; }
+  const statusAtual=getMesaStatus(mesaObj);
+  if(statusAtual==='vendida'||statusAtual==='negociacao'){
+    toast('Mesa #'+pedido.mesa_id+' já foi reservada ou vendida. Não é possível renovar.','error'); return;
+  }
+  if(statusAtual==='bloqueada'){
+    toast('Mesa #'+pedido.mesa_id+' está bloqueada pelo admin.','error'); return;
+  }
+  const novoCriado=Date.now();
+  const{error}=await sb.from('pedidos').update({status:'aguardando',criado_em:novoCriado}).eq('id',id);
+  if(error){ toast('Erro ao renovar reserva.','error'); return; }
+  pedido.status='aguardando'; pedido.criado_em=novoCriado;
+  renderPedidos(); renderBuyer();
+  toast('Reserva da mesa #'+pedido.mesa_id+' renovada!','success');
 }
 
 async function excluirRegistro(id){
