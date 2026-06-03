@@ -613,7 +613,7 @@ function openBuyModal(mesaId){
       </div>
     </div>
     <div id="cpf-warn" style="font-size:12px;color:var(--vermelho);margin-top:-8px;margin-bottom:8px;display:none"></div>
-    <button class="btn-primary" id="btn-ir-pix" onclick="goToPix(${mesaId})" disabled>Continuar para o Pix →</button>
+    <button class="btn-primary" id="btn-ir-pix" onclick="goToPix(${mesaId})" disabled>✅ Confirmar reserva</button>
   `);
 }
 
@@ -666,59 +666,108 @@ async function goToPix(mesaId){
   const cfg=state.config;
   const mesaObj=state.mesas.find(m=>m.id===mesaId);
   if(!mesaObj||getMesaStatus(mesaObj)!=='disponivel'){ toast('Esta mesa já foi reservada. Escolha outra.','error'); closeModal(); return; }
-  // Reconfirma limite de CPF no momento da criação
-  const cpfLimite=document.getElementById('buy-cpf').value.replace(/\D/g,'');
+  const cpfLimite=cpf.replace(/\D/g,'');
   const jaTem=state.pedidos.filter(p=>p.cpf===cpfLimite&&p.status==='confirmado').length;
   if(jaTem>=(state.config.max_por_cpf||2)){ toast('Limite de mesas por CPF atingido.','error'); closeModal(); return; }
   const wpp=document.getElementById('buy-whatsapp').value.replace(/\D/g,'');
+
+  // Mostra loading enquanto salva
+  document.getElementById('btn-ir-pix').disabled=true;
+  document.getElementById('btn-ir-pix').textContent='Reservando...';
+
   const pedido={ id:Date.now(), mesa_id:mesaId, nome, cpf, whatsapp:wpp, setor, equipe, valor:cfg.valor, criado_em:Date.now(), status:'aguardando' };
   const{error}=await sb.from('pedidos').insert(pedido);
-  if(error){ toast('Erro ao criar reserva. Tente novamente.','error'); return; }
+  if(error){ toast('Erro ao criar reserva. Tente novamente.','error'); document.getElementById('btn-ir-pix').disabled=false; document.getElementById('btn-ir-pix').textContent='✅ Confirmar reserva'; return; }
   state.pedidos.unshift(pedido); renderBuyer();
-  // Abre WhatsApp automaticamente com aviso de reserva (sem API — usa wa.me)
-  if(wpp && wpp.length>=10){
-    const horasWa=cfg.tempo_reserva||2;
-    const horasWaTexto=horasWa===1?'1 hora':(Number.isInteger(Number(horasWa))?horasWa+' horas':horasWa+' horas');
-    const msgWa=encodeURIComponent(
-      '🎉 Olá '+nome+'! Sua mesa *#'+mesaId+'* do *Arraial da Norte IV* está reservada!\n\n'+
-      '⏰ Você tem *'+horasWaTexto+'* para realizar o pagamento via Pix.\n\n'+
-      '💰 Valor: *R$ '+fmtVal(cfg.valor)+'*\n'+
-      (cfg.pix_chave?'🔑 Chave Pix ('+cfg.pix_tipo+'): *'+cfg.pix_chave+'*\n\n':'\n')+
-      'Após a confirmação do pagamento, você receberá o comprovante aqui pelo WhatsApp. 🤠🎊'
-    );
-    // Abre em nova aba para não fechar o modal
-    setTimeout(()=>window.open('https://wa.me/55'+wpp+'?text='+msgWa,'_blank'),600);
-  }
+
+  // ── TELA 1: Confirmação da reserva ──
+  mostrarConfirmacaoReserva(pedido);
+}
+
+function mostrarConfirmacaoReserva(pedido){
+  const cfg=state.config;
+  const horas=cfg.tempo_reserva||2;
+  const horasTexto=Number(horas)===1?'1 hora':horas+' horas';
+  const wppFmt=pedido.whatsapp?pedido.whatsapp.replace(/(\d{2})(\d{4,5})(\d{4})/,'($1) $2-$3'):'';
+  showModal(`
+    <div style="text-align:center;padding:8px 0 4px">
+      <div style="font-size:56px;margin-bottom:8px">🎉</div>
+      <div style="font-size:13px;font-weight:600;color:var(--verde);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:16px">Reserva confirmada!</div>
+      <div style="font-size:14px;color:var(--text2);margin-bottom:6px">Esta é a sua reserva</div>
+
+      <!-- Número da mesa em destaque -->
+      <div style="background:linear-gradient(135deg,#f97316,#fbbf24);border-radius:16px;padding:20px 16px;margin:0 0 18px;box-shadow:0 4px 20px rgba(249,115,22,0.35)">
+        <div style="font-size:13px;font-weight:600;color:#7c2d12;margin-bottom:4px">MESA</div>
+        <div style="font-size:72px;font-weight:700;color:#7c2d12;line-height:1;letter-spacing:-2px">${pedido.mesa_id}</div>
+        <div style="font-size:12px;color:#92400e;margin-top:6px">${cfg.nome_evento}</div>
+      </div>
+
+      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px;text-align:left;margin-bottom:16px;font-size:13px;line-height:1.7">
+        <div><span style="color:var(--text2)">Nome:</span> <strong>${pedido.nome}</strong></div>
+        <div><span style="color:var(--text2)">Setor / Equipe:</span> <strong>S${pedido.setor} / E${String(pedido.equipe).padStart(2,'0')}</strong></div>
+        <div><span style="color:var(--text2)">Valor:</span> <strong style="color:var(--accent2)">R$ ${fmtVal(pedido.valor)}</strong></div>
+        ${wppFmt?`<div><span style="color:var(--text2)">WhatsApp:</span> <strong>${wppFmt}</strong></div>`:''}
+      </div>
+
+      <div style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--amarelo-light);margin-bottom:18px;line-height:1.6">
+        ⏰ Você tem <strong>${horasTexto}</strong> para realizar o pagamento. Após esse prazo a reserva é cancelada automaticamente.
+      </div>
+
+      <button class="btn-primary" onclick="mostrarTelaPagamento(${pedido.id})" style="font-size:15px;padding:15px">
+        💳 Ir para o pagamento
+      </button>
+      <button class="btn-secondary" onclick="fecharSemPagar()" style="margin-top:8px;font-size:12px">
+        Fechar — vou pagar depois (reserva continua ativa)
+      </button>
+    </div>
+  `);
+}
+
+function fecharSemPagar(){
+  closeModal();
+  // Aviso amigável após fechar
+  setTimeout(()=>{
+    toast('✅ Reserva ativa! Lembre-se de pagar dentro do prazo.','success');
+  },300);
+}
+
+function mostrarTelaPagamento(pedidoId){
+  const pedido=state.pedidos.find(p=>p.id===pedidoId);
+  if(!pedido) return;
+  const cfg=state.config;
   const horas=cfg.tempo_reserva||2;
   const endTime=pedido.criado_em+horas*60*60*1000;
-  const horasTexto=horas===1?'1 hora':(Number.isInteger(horas)?horas+' horas':horas+' horas');
+  const horasTexto=Number(horas)===1?'1 hora':horas+' horas';
+
   showModal(`
-    <div class="modal-tag" style="background:rgba(22,163,74,0.15);color:#16a34a">🎉 Mesa reservada!</div>
-    <h2 style="color:var(--accent2)">Mesa #${mesaId} é sua!</h2>
-    <p class="modal-subtitle" style="line-height:1.7">
-      Sua mesa está reservada${wpp?` e enviamos o aviso para o WhatsApp <strong style="color:var(--accent2)">(${pedido.whatsapp.replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3')})</strong>`:''}.<br>
-      Agora é só realizar o pagamento via Pix. Você tem <strong style="color:var(--accent2)">${horasTexto}</strong> — após esse prazo a reserva é cancelada automaticamente.
+    <div class="modal-tag">💳 Pagamento via Pix</div>
+    <h2>Mesa #${pedido.mesa_id}</h2>
+    <p class="modal-subtitle" style="line-height:1.65">
+      Abra o app do seu banco, vá em Pix e cole a chave abaixo. O pagamento é rápido e seguro.
     </p>
     <div class="pix-card">
-      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Valor a pagar</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Valor a pagar</div>
       <div class="pix-amount">R$ ${fmtVal(cfg.valor)}</div>
-      <div class="pix-label">Mesa #${mesaId} • ${nome}</div>
+      <div class="pix-label">Mesa #${pedido.mesa_id} • ${pedido.nome}</div>
       ${cfg.pix_chave?`
-        <div style="font-size:12px;color:var(--text2);margin:10px 0 6px;text-align:left">Copie a chave Pix e cole no app do seu banco:</div>
+        <div style="font-size:12px;color:var(--text2);margin:12px 0 6px;text-align:left;font-weight:600">Chave Pix — copie e cole no seu banco:</div>
         <div class="pix-key-box">
           <div><div class="pix-key-label">${cfg.pix_tipo}</div><div class="pix-key-val">${cfg.pix_chave}</div></div>
-          <button class="btn-copy" onclick="copyKey('${cfg.pix_chave}')">Copiar</button>
+          <button class="btn-copy" onclick="copyKey('${cfg.pix_chave}')">📋 Copiar</button>
         </div>
-        ${cfg.pix_nome?`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Favorecido: ${cfg.pix_nome}</div>`:''}
+        ${cfg.pix_nome?`<div style="font-size:11px;color:var(--text3);margin-bottom:4px">Favorecido: ${cfg.pix_nome}</div>`:''}
       `:'<div style="font-size:13px;color:var(--text3);margin-bottom:12px">Chave Pix não configurada. Solicite ao organizador.</div>'}
       <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar" style="width:100%"></div></div>
       <div class="timer-text" id="timer-text"></div>
     </div>
-    <div class="waiting-msg" style="background:rgba(22,163,74,0.12);color:#16a34a;border:1px solid rgba(22,163,74,0.25)">
-      ✅ Após a confirmação do pagamento, você receberá o comprovante pelo WhatsApp.
+    <div class="waiting-msg" style="background:rgba(22,163,74,0.12);color:#bbf7d0;border:1px solid rgba(22,163,74,0.25);margin-top:12px">
+      ✅ Após a confirmação do recebimento, você receberá o comprovante pelo WhatsApp.
     </div>
-    <button class="btn-secondary" onclick="closeModal()">Fechar — minha reserva continua ativa</button>
+    <button class="btn-secondary" onclick="fecharTelaPagamento(${pedido.mesa_id})" style="margin-top:10px">
+      Fechar
+    </button>
   `);
+
   if(timerInterval) clearInterval(timerInterval);
   function tick(){
     const rem=endTime-Date.now();
@@ -728,6 +777,29 @@ async function goToPix(mesaId){
     if(txt){ const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000); txt.textContent=`Expira em ${h}h${m.toString().padStart(2,'0')}min`; }
   }
   tick(); timerInterval=setInterval(tick,1000);
+}
+
+function fecharTelaPagamento(mesaId){
+  closeModal();
+  // ── Aviso final ao fechar tela de pagamento ──
+  setTimeout(()=>{
+    showModal(`
+      <div style="text-align:center;padding:12px 0">
+        <div style="font-size:52px;margin-bottom:12px">🤠</div>
+        <div style="font-size:18px;font-weight:700;color:var(--accent2);margin-bottom:10px;letter-spacing:-0.01em">
+          Reserva da Mesa #${mesaId} feita com sucesso!
+        </div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:20px">
+          Assim que o pagamento for confirmado pelo organizador,<br>
+          <strong style="color:var(--text)">você receberá o comprovante pelo WhatsApp.</strong>
+        </div>
+        <div style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.25);border-radius:var(--radius-sm);padding:12px;font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6">
+          🎊 Nos vemos no Arraial da Norte IV!<br>Qualquer dúvida, fale com os organizadores.
+        </div>
+        <button class="btn-primary" onclick="closeModal()">Fechar</button>
+      </div>
+    `);
+  },250);
 }
 
 function copyKey(key){ navigator.clipboard.writeText(key).then(()=>toast('Chave Pix copiada!','success')); }
