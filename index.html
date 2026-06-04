@@ -1259,13 +1259,22 @@ function makeDraggable(el,id){
 }
 
 async function loadBgImage(e){
-  const file=e.target.files[0]; if(!file) return;
+  const file=e.target.files[0];
+  // Limpa o input logo — garante que trocar pela mesma imagem ou selecionar
+  // novamente sempre dispara o onchange (bug comum no Chrome/iOS)
+  e.target.value='';
+  if(!file) return;
+  toast('Carregando imagem...','');
   const reader=new FileReader();
   reader.onload=async ev=>{
     const img=ev.target.result;
-    await sb.from('config').update({bg_image:img}).eq('id',1);
-    state.config.bg_image=img; renderAdminLayout(); renderBuyer(); toast('Imagem carregada!','success');
+    const{error}=await sb.from('config').update({bg_image:img}).eq('id',1);
+    if(error){ toast('Erro ao salvar imagem. Tente novamente.','error'); return; }
+    state.config.bg_image=img;
+    renderAdminLayout(); renderBuyer();
+    toast('Imagem atualizada!','success');
   };
+  reader.onerror=()=>toast('Erro ao ler o arquivo.','error');
   reader.readAsDataURL(file);
 }
 
