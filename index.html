@@ -1260,22 +1260,57 @@ function makeDraggable(el,id){
 
 async function loadBgImage(e){
   const file=e.target.files[0];
-  // Limpa o input logo — garante que trocar pela mesma imagem ou selecionar
-  // novamente sempre dispara o onchange (bug comum no Chrome/iOS)
   e.target.value='';
   if(!file) return;
-  toast('Carregando imagem...','');
-  const reader=new FileReader();
-  reader.onload=async ev=>{
-    const img=ev.target.result;
-    const{error}=await sb.from('config').update({bg_image:img}).eq('id',1);
-    if(error){ toast('Erro ao salvar imagem. Tente novamente.','error'); return; }
-    state.config.bg_image=img;
-    renderAdminLayout(); renderBuyer();
-    toast('Imagem atualizada!','success');
-  };
-  reader.onerror=()=>toast('Erro ao ler o arquivo.','error');
-  reader.readAsDataURL(file);
+
+  // Verifica tamanho — base64 expande ~33%, limite seguro do Supabase text é ~5MB
+  if(file.size > 3.5 * 1024 * 1024){
+    toast('Imagem muito grande. Use uma imagem menor que 3.5MB.','error');
+    return;
+  }
+
+  toast('Processando imagem...','');
+
+  // Redimensiona a imagem antes de salvar para garantir que cabe no banco
+  const bitmap = await createImageBitmap(file);
+  const MAX = 1200; // largura máxima em px
+  const scale = bitmap.width > MAX ? MAX / bitmap.width : 1;
+  const w = Math.round(bitmap.width * scale);
+  const h = Math.round(bitmap.height * scale);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, 0, 0, w, h);
+
+  // Comprime para JPEG 85% — muito menor que PNG original
+  const img = canvas.toDataURL('image/jpeg', 0.85);
+
+  console.log('Imagem original:', Math.round(file.size/1024)+'KB');
+  console.log('Imagem comprimida (base64):', Math.round(img.length/1024)+'KB');
+
+  toast('Salvando imagem...','');
+
+  try {
+    // Tenta upsert em vez de update — mais robusto quando a linha existe
+    const { error } = await sb.from('config')
+      .upsert({ id: 1, bg_image: img }, { onConflict: 'id' });
+
+    if(error){
+      console.error('Supabase error:', error);
+      toast('Erro ao salvar: '+error.message,'error');
+      return;
+    }
+
+    state.config.bg_image = img;
+    renderAdminLayout();
+    renderBuyer();
+    toast('Imagem atualizada com sucesso!','success');
+
+  } catch(err) {
+    console.error('Erro inesperado:', err);
+    toast('Erro inesperado ao salvar imagem.','error');
+  }
 }
 
 // ── CONFIG ──
