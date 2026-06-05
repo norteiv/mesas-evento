@@ -358,8 +358,16 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 <!-- ══ ADMIN ══ -->
 <div id="view-admin" class="hidden">
   <div class="admin-header">
-    <h1>Painel Admin</h1>
-    <button class="btn-danger-sm" onclick="logout()">Sair</button>
+    <div style="display:flex;align-items:center;gap:10px">
+      <h1>Painel Admin</h1>
+      <div id="realtime-indicator" title="Tempo real: conectando..."
+           style="width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0;transition:background 0.3s"></div>
+      <span style="font-size:11px;color:var(--text3)" id="last-update"></span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn-outline" onclick="atualizarManual()" style="font-size:11px;padding:5px 10px">🔄 Atualizar</button>
+      <button class="btn-danger-sm" onclick="logout()">Sair</button>
+    </div>
   </div>
   <div class="admin-tabs">
     <button class="admin-tab active" onclick="switchTab('pedidos',this)">Pedidos</button>
@@ -470,11 +478,26 @@ async function loadMesas(){ const{data}=await sb.from('mesas').select('*').order
 async function loadPedidos(){ const{data}=await sb.from('pedidos').select('*').order('criado_em',{ascending:false}); if(data)state.pedidos=data; }
 
 function setupRealtime(){
-  sb.channel('app-live')
+  const channel = sb.channel('app-live')
     .on('postgres_changes',{event:'*',schema:'public',table:'mesas'},    async()=>{ await loadMesas();   renderBuyer(); if(isLoggedIn){renderAdminMesas();renderPedidos();} })
     .on('postgres_changes',{event:'*',schema:'public',table:'pedidos'},  async()=>{ await loadPedidos(); renderBuyer(); if(isLoggedIn)renderPedidos(); })
     .on('postgres_changes',{event:'*',schema:'public',table:'config'},   async()=>{ await loadConfig(); renderWelcome(); renderBuyer(); if(isLoggedIn)renderConfig(); })
-    .subscribe();
+    .subscribe((status)=>{
+      const ind=document.getElementById('realtime-indicator');
+      if(status==='SUBSCRIBED'){
+        if(ind){ ind.style.background='#22c55e'; ind.title='Tempo real: conectado'; }
+      } else {
+        if(ind){ ind.style.background='#f59e0b'; ind.title='Tempo real: reconectando...'; }
+      }
+    });
+
+  // Polling de segurança: atualiza dados a cada 30s independente do realtime
+  // Garante que o admin sempre veja dados atualizados mesmo se WS cair
+  setInterval(async()=>{
+    await Promise.all([loadPedidos(), loadMesas()]);
+    if(isLoggedIn) renderPedidos();
+    renderBuyer();
+  }, 30000);
 }
 
 // ── VIEWS ──
@@ -571,18 +594,32 @@ function renderBuyer(){
 
 function getMesaStatus(mesa){
   if(mesa.bloqueada) return 'bloqueada';
-  const p=state.pedidos.find(p=>p.mesa_id===mesa.id && p.status!=='expirado' && p.status!=='cancelado');
-  if(!p) return 'disponivel';
-  if(p.status==='confirmado') return 'vendida';
-  return 'negociacao';
+  // Prioridade: confirmado > aguardando > nada
+  const confirmado=state.pedidos.find(p=>p.mesa_id===mesa.id && p.status==='confirmado');
+  if(confirmado) return 'vendida';
+  const aguardando=state.pedidos.find(p=>p.mesa_id===mesa.id && p.status==='aguardando');
+  if(aguardando) return 'negociacao';
+  return 'disponivel';
 }
 
 function checkExpiredReservations(){
   const agora=Date.now();
+  const horas=Number(state.config.tempo_reserva)||2;
+  const limitems=horas*60*60*1000;
+
   state.pedidos.forEach(async p=>{
-    if(p.status==='aguardando'){
-      const horas=state.config.tempo_reserva||2;
-      if(agora-p.criado_em>horas*60*60*1000){ await sb.from('pedidos').update({status:'expirado'}).eq('id',p.id); p.status='expirado'; }
+    // NUNCA toca pedidos confirmados, cancelados ou já expirados
+    if(p.status!=='aguardando') return;
+
+    // criado_em pode vir como string do banco — força number
+    const criadoEm=Number(p.criado_em);
+
+    // Sanidade: se criado_em for 0 ou inválido, ignora
+    if(!criadoEm || criadoEm < 1000000000000) return; // menor que ano 2001 em ms = suspeito
+
+    if(agora - criadoEm > limitems){
+      const{error}=await sb.from('pedidos').update({status:'expirado'}).eq('id',p.id).eq('status','aguardando');
+      if(!error) p.status='expirado';
     }
   });
 }
@@ -837,7 +874,22 @@ function closeModal(){ document.getElementById('modal-overlay').classList.add('h
 function closeModalOverlay(e){ if(e.target===document.getElementById('modal-overlay'))closeModal(); }
 
 // ── ADMIN PEDIDOS ──
-function renderAdmin(){ renderPedidos(); renderAdminLayout(); renderConfig(); }
+function renderAdmin(){ renderPedidos(); renderAdminLayout(); renderConfig(); atualizarLastUpdate(); }
+
+async function atualizarManual(){
+  const btn=document.querySelector('button[onclick="atualizarManual()"]');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Atualizando...'; }
+  await Promise.all([loadPedidos(), loadMesas(), loadConfig()]);
+  renderPedidos(); renderAdminMesas(); renderBuyer();
+  atualizarLastUpdate();
+  if(btn){ btn.disabled=false; btn.textContent='🔄 Atualizar'; }
+  toast('Dados atualizados!','success');
+}
+
+function atualizarLastUpdate(){
+  const el=document.getElementById('last-update');
+  if(el) el.textContent='Atualizado: '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
 
 function renderPedidos(){
   checkExpiredReservations();
