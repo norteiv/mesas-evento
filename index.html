@@ -277,7 +277,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="brand-event" id="header-event-sub"></div>
     </div>
   </div>
-  <button id="btn-admin-toggle">Área admin</button>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span id="version-badge" style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;letter-spacing:0.03em"></span>
+    <button id="btn-admin-toggle">Área admin</button>
+  </div>
 </header>
 
 <!-- ══ WELCOME ══ -->
@@ -384,6 +387,11 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="stat-card"><div class="stat-num" id="stat-bloqueadas" style="color:var(--text3)">0</div><div class="stat-label">Bloqueadas</div></div>
       <div class="stat-card"><div class="stat-num" id="stat-receita" style="color:var(--accent)">R$&nbsp;0</div><div class="stat-label">Receita confirmada</div></div>
     </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <button class="btn-outline" onclick="exportarRelatorio()" style="color:var(--accent2);border-color:var(--accent2);font-size:12px">
+        📄 Exportar relatório CSV
+      </button>
+    </div>
     <div class="pedidos-table-wrap">
       <table class="pedidos-table">
         <thead><tr><th>Mesa</th><th>Comprador</th><th>Setor/Equipe</th><th>CPF</th><th>WhatsApp</th><th>Valor</th><th>Horário</th><th>Status</th><th>Ações</th></tr></thead>
@@ -456,6 +464,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 </div>
 
 <script>
+const APP_VERSION = 'v1.32';
+
 const SUPABASE_URL = 'https://pltpclawhtqecqcpajnt.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_d_ZqB0jzYcu5NoM3nYQjgw_dEDhT9T8';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -471,6 +481,8 @@ async function init() {
   await Promise.all([loadConfig(),loadMesas(),loadPedidos()]);
   setupRealtime();
   document.getElementById('loading-screen').style.display='none';
+  const vbadge=document.getElementById('version-badge');
+  if(vbadge) vbadge.textContent=APP_VERSION;
   showView('welcome');
 }
 async function loadConfig(){ const{data}=await sb.from('config').select('*').eq('id',1).single(); if(data)state.config=data; }
@@ -874,6 +886,56 @@ function closeModal(){ document.getElementById('modal-overlay').classList.add('h
 function closeModalOverlay(e){ if(e.target===document.getElementById('modal-overlay'))closeModal(); }
 
 // ── ADMIN PEDIDOS ──
+function exportarRelatorio(){
+  const confirmados = state.pedidos.filter(p => p.status === 'confirmado');
+
+  if(!confirmados.length){
+    toast('Nenhuma mesa confirmada para exportar.','error');
+    return;
+  }
+
+  // Cabeçalho CSV
+  const linhas = [
+    ['Mesa','Comprador','CPF','WhatsApp','Setor','Equipe','Valor (R$)','Confirmado em'].join(';')
+  ];
+
+  // Ordena por número de mesa
+  confirmados
+    .slice()
+    .sort((a,b) => a.mesa_id - b.mesa_id)
+    .forEach(p => {
+      linhas.push([
+        '#' + p.mesa_id,
+        p.nome,
+        p.cpf,
+        p.whatsapp || '',
+        p.setor ? 'Setor ' + p.setor : '',
+        p.equipe ? 'Equipe ' + String(p.equipe).padStart(2,'0') : '',
+        Number(p.valor).toFixed(2).replace('.',','),
+        formatDateTime(p.criado_em)
+      ].map(v => '"' + String(v).replace(/"/g,'""') + '"').join(';'));
+    });
+
+  // Adiciona linha de total
+  const total = confirmados.reduce((s,p) => s + Number(p.valor), 0);
+  linhas.push('');
+  linhas.push('"Total de mesas confirmadas:";"' + confirmados.length + '"');
+  linhas.push('"Receita total:";"R$ ' + total.toLocaleString('pt-BR',{minimumFractionDigits:2}) + '"');
+  linhas.push('"Gerado em:";"' + formatDateTime(Date.now()) + '"');
+
+  // Gera o arquivo e faz download
+  const cfg = state.config;
+  const nomeArquivo = 'relatorio-' + cfg.nome_evento.replace(/\s+/g,'-').toLowerCase() + '-' + new Date().toLocaleDateString('pt-BR').replace(/\//g,'-') + '.csv';
+  const blob = new Blob(['﻿' + linhas.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomeArquivo;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Relatório exportado: ' + confirmados.length + ' mesas confirmadas.','success');
+}
+
 function renderAdmin(){ renderPedidos(); renderAdminLayout(); renderConfig(); atualizarLastUpdate(); }
 
 async function atualizarManual(){
